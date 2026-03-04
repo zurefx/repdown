@@ -1,0 +1,8 @@
+{
+  "name": "OSCP Purple",
+  "description": "Professional OSCP-style report with purple accent cover page",
+  "engine": "xelatex",
+  "fonts": ["Roboto", "JetBrains Mono"],
+  "version": "1.0",
+  "tags": ["oscp", "redteam", "professional"]
+}

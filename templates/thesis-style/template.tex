@@ -1,0 +1,843 @@
+% ============================================================
+% TEMPLATE PANDOC — MARKDOWNPDF
+% Pandoc + XeLaTeX
+%
+% FUENTES:
+%   Roboto          → cuerpo del documento
+%   JetBrains Mono  → código (con fallback a FreeMono)
+% ============================================================
+
+\documentclass[11pt, a4paper, oneside]{article}
+
+% ── PAQUETES CORE ───────────────────────────────────────────
+\usepackage{fontspec}
+\usepackage[provide=*,english]{babel}
+\usepackage{xcolor}
+\usepackage[
+  a4paper,
+  top=2cm,
+  bottom=2cm,
+  left=2cm,
+  right=2cm,
+  includehead=true,
+  includefoot=true,
+  footskip=1.2cm,
+  headsep=0.6cm,
+  headheight=0pt
+]{geometry}
+
+% ── FUENTES ─────────────────────────────────────────────────
+\setmainfont{Roboto}[
+  BoldFont       = Roboto Bold,
+  ItalicFont     = Roboto Italic,
+  BoldItalicFont = Roboto Bold Italic,
+  Scale          = 1
+]
+\setsansfont{Roboto}[
+  BoldFont       = Roboto Bold,
+  ItalicFont     = Roboto Italic,
+  BoldItalicFont = Roboto Bold Italic,
+  Scale          = 1
+]
+
+% JetBrains Mono con fallback a FreeMono si no está instalada
+\IfFontExistsTF{JetBrains Mono}{
+  \setmonofont{JetBrains Mono}[
+    BoldFont       = JetBrains Mono Bold,
+    ItalicFont     = JetBrains Mono Italic,
+    BoldItalicFont = JetBrains Mono Bold Italic,
+    Scale          = 0.8,
+    Ligatures      = TeX
+  ]
+}{
+  \setmonofont{FreeMono}[
+    BoldFont       = FreeMono Bold,
+    ItalicFont     = FreeMono Oblique,
+    BoldItalicFont = FreeMono Bold Oblique,
+    Scale          = 0.8
+  ]
+}
+
+\newfontfamily\coverFont{Roboto}[
+  BoldFont       = Roboto Bold,
+  ItalicFont     = Roboto Italic,
+  BoldItalicFont = Roboto Bold Italic
+]
+
+% ── PALETA PORTADA — PURPLE (activa) ────────────────────────
+\definecolor{titlepage-bg}{HTML}{5946B2}
+\definecolor{sidebar-cover}{HTML}{3D3080}
+\definecolor{title-text}{HTML}{FFFFFF}
+\definecolor{subtitle-text}{HTML}{D8D0F5}
+\definecolor{primary}{HTML}{5946B2}
+\definecolor{accent}{HTML}{3D3080}
+
+% RED:   titlepage-bg=C8102E  sidebar-cover=A00D25  subtitle-text=F5D0D5
+% BLUE:  titlepage-bg=0D2B6E  sidebar-cover=091D4E  subtitle-text=C8D8F5
+% GREEN: titlepage-bg=0A4D2F  sidebar-cover=063320  subtitle-text=C0EDD5
+% DARK:  titlepage-bg=1A1A2E  sidebar-cover=0F0F1A  subtitle-text=A0A8C0
+
+% ── COLORES GENERALES ───────────────────────────────────────
+\definecolor{body-text}{RGB}{0,0,0}
+\definecolor{link-color}{HTML}{000000}
+\definecolor{url-color}{HTML}{0055CC}
+\definecolor{caption-color}{HTML}{555555}
+\definecolor{blockquote-border}{RGB}{200,200,200}
+\definecolor{blockquote-text}{RGB}{90,90,90}
+\definecolor{tableheader}{HTML}{EDE9FA}
+\definecolor{tableline}{HTML}{C5B8F0}
+
+% ── PALETA CÓDIGO — One Dark Pro (VS Code style) ─────────────
+%    Basada en el tema One Dark Pro, el más popular de VS Code
+\definecolor{code-bg}{HTML}{282C34}
+\definecolor{code-gutter}{HTML}{1E2227}
+\definecolor{code-border}{HTML}{3E4451}
+\definecolor{code-border-accent}{HTML}{528BFF}
+\definecolor{code-fg}{HTML}{ABB2BF}
+\definecolor{code-keyword}{HTML}{C678DD}
+\definecolor{code-keyword2}{HTML}{61AFEF}
+\definecolor{code-string}{HTML}{98C379}
+\definecolor{code-comment}{HTML}{5C6370}
+\definecolor{code-number}{HTML}{D19A66}
+\definecolor{code-operator}{HTML}{56B6C2}
+\definecolor{code-function}{HTML}{61AFEF}
+\definecolor{code-type}{HTML}{E5C07B}
+\definecolor{code-builtin}{HTML}{E06C75}
+\definecolor{code-special}{HTML}{C678DD}
+\definecolor{code-constant}{HTML}{D19A66}
+\definecolor{code-variable}{HTML}{E06C75}
+
+% ── TIPOGRAFÍA Y PÁRRAFOS ───────────────────────────────────
+\usepackage{setspace}
+\setstretch{1.2}
+\usepackage{parskip}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{7pt plus 2pt minus 1pt}
+\setlength{\emergencystretch}{3em}
+\setcounter{secnumdepth}{5}
+\setcounter{tocdepth}{3}
+\AtBeginDocument{\color{body-text}}
+
+% ── MATEMÁTICAS ─────────────────────────────────────────────
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+% ── GRÁFICOS ────────────────────────────────────────────────
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{tikz}
+\usetikzlibrary{calc}
+
+% ── NUMERACIÓN DE FIGURAS POR SECCIÓN ───────────────────────
+\usepackage{chngcntr}
+\counterwithin{figure}{section}
+
+\captionsetup{
+  font={stretch=1.2, small},
+  textfont={color=caption-color},
+  labelfont={bf},
+  position=below,
+  skip=6pt,
+  singlelinecheck=false,
+  justification=raggedright,
+  labelsep=endash
+}
+\renewcommand{\figurename}{Figure}
+\renewcommand{\thefigure}{\thesection.\arabic{figure}}
+
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+
+\floatplacement{figure}{H}
+\floatplacement{table}{H}
+\setlength{\fboxsep}{0pt}
+\setlength{\fboxrule}{1pt}
+
+\makeatletter
+\g@addto@macro\@floatboxreset\centering
+\makeatother
+
+\AtBeginEnvironment{figure}{\centering}
+
+\setlength{\abovecaptionskip}{8pt}
+\setlength{\belowcaptionskip}{4pt}
+
+% ── TABLAS ──────────────────────────────────────────────────
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{colortbl}
+\usepackage{tabularx}
+\usepackage{adjustbox}
+\usepackage{xstring}
+\newcolumntype{Z}{>{\raggedright\arraybackslash}X}
+\newcolumntype{V}{>{\centering\arraybackslash}X}
+\newcolumntype{W}{>{\raggedleft\arraybackslash}X}
+
+\arrayrulecolor[HTML]{999999}
+\setlength\heavyrulewidth{0.18em}
+\setlength\lightrulewidth{0.08em}
+\renewcommand{\arraystretch}{1.55}
+\setlength{\tabcolsep}{11pt}
+\setlength{\textfloatsep}{8pt plus 2pt minus 2pt}
+\setlength{\intextsep}{6pt plus 2pt minus 2pt}
+\setlength{\floatsep}{6pt plus 2pt minus 2pt}
+
+\newcolumntype{C}[1]{>{\centering\arraybackslash}m{#1}}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}m{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\arraybackslash}m{#1}}
+
+\setlength{\LTleft}{\fill}
+\setlength{\LTright}{\fill}
+\setlength{\LTpre}{6pt}
+\setlength{\LTpost}{6pt}
+
+\AtBeginEnvironment{longtable}{%
+  \small%
+  \arrayrulecolor[HTML]{999999}%
+}
+\renewcommand{\rowcolors}[4][]{}
+
+\let\oldtabular\tabular
+\let\endoldtabular\endtabular
+\renewenvironment{tabular}[1]{%
+  \begin{tabular*}{\linewidth}{@{\extracolsep{\fill}}#1@{}}%
+}{%
+  \end{tabular*}%
+}
+
+% ── LISTAS ──────────────────────────────────────────────────
+\usepackage{enumitem}
+\setlist[itemize]{leftmargin=1.6em, itemsep=3pt, parsep=0pt, topsep=4pt}
+\setlist[enumerate]{leftmargin=1.6em, itemsep=3pt, parsep=0pt, topsep=4pt}
+\setlist[itemize,1]{label={\color{body-text}\textbullet}}
+\setlist[itemize,2]{label={\color{body-text}\bfseries{--}}}
+\setlist[itemize,3]{label={\color{body-text}\ensuremath{\circ}}}
+
+% ── CÓDIGO — VS Code Style ───────────────────────────────────
+\usepackage{listings}
+\usepackage{fancyvrb}
+\usepackage{fvextra}
+
+% Configuración base — One Dark Pro
+% Línea izquierda accent (border-left estilo VS Code) via mdframed
+\lstset{
+  backgroundcolor=\color{code-bg},
+  basicstyle=\ttfamily\fontsize{8.2pt}{11pt}\selectfont\color{code-fg},
+  commentstyle=\color{code-comment}\itshape,
+  keywordstyle=\color{code-keyword}\bfseries,
+  stringstyle=\color{code-string},
+  numberstyle=\ttfamily\fontsize{7pt}{11pt}\selectfont\color{code-comment},
+  identifierstyle=\color{code-fg},
+  breakatwhitespace=false,
+  breaklines=true,
+  postbreak=\mbox{\textcolor{code-comment}{\ensuremath{\hookrightarrow}}\space},
+  captionpos=b,
+  keepspaces=true,
+  % Numeración de líneas activada — estilo gutter de VS Code
+  numbers=left,
+  numbersep=14pt,
+  stepnumber=1,
+  showspaces=false,
+  showstringspaces=false,
+  showtabs=false,
+  tabsize=4,
+  frame=none,            % mdframed se encarga del frame
+  columns=fullflexible,
+  lineskip=1pt,
+  escapeinside={(*@}{@*)},
+  morecomment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  literate=
+    {á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1
+    {Á}{{\'A}}1 {É}{{\'E}}1 {Í}{{\'I}}1 {Ó}{{\'O}}1 {Ú}{{\'U}}1
+    {ñ}{{\~n}}1 {Ñ}{{\~N}}1
+}
+
+% ── Python ──────────────────────────────────────────────────
+\lstdefinestyle{python}{
+  language=Python,
+  keywordstyle=\color{code-keyword}\bfseries,
+  stringstyle=\color{code-string},
+  commentstyle=\color{code-comment}\itshape,
+  morekeywords={self,True,False,None,as,with,async,await,
+                lambda,yield,nonlocal,import,from,class,def,
+                return,if,elif,else,for,while,try,except,
+                finally,raise,pass,break,continue,and,or,not,in,is},
+  emph={print,len,range,int,str,float,list,dict,tuple,set,
+        bool,type,open,input,enumerate,zip,map,filter,
+        sorted,reversed,sum,min,max,abs,round,hasattr,
+        getattr,setattr,isinstance,requests,socket,
+        subprocess,os,sys,json,base64,hashlib,struct,re},
+  emphstyle=\color{code-builtin}\bfseries
+}
+
+% ── Bash ────────────────────────────────────────────────────
+\lstdefinestyle{bash}{
+  language=bash,
+  keywordstyle=\color{code-operator}\bfseries,
+  stringstyle=\color{code-string},
+  commentstyle=\color{code-comment}\itshape,
+  morekeywords={sudo,su,chmod,chown,chgrp,grep,awk,sed,find,
+                curl,wget,nc,netcat,nmap,python,python3,
+                smbclient,msfvenom,export,source,alias,
+                echo,cat,ls,cd,rm,cp,mv,mkdir,touch,
+                ssh,scp,ping,ps,kill,bash,sh,zsh},
+  alsoletter={-},
+  emph={exploit,payload,reverse,bind,shell,meterpreter,lhost,lport},
+  emphstyle=\color{code-builtin}\bfseries
+}
+
+% ── PowerShell ──────────────────────────────────────────────
+\lstdefinestyle{powershell}{
+  language={},
+  basicstyle=\ttfamily\fontsize{8.2pt}{11pt}\selectfont\color{code-fg},
+  keywordstyle=\color{code-keyword2}\bfseries,
+  stringstyle=\color{code-string},
+  commentstyle=\color{code-comment}\itshape,
+  morekeywords={param,function,if,else,elseif,switch,foreach,
+                while,do,return,break,continue,true,false,null,
+                whoami,ipconfig,type,iwr,
+                Get-Process,Get-Item,Get-Content,Get-ChildItem,
+                Get-NetIPAddress,Get-LocalUser,Get-Service,
+                Invoke-Expression,Invoke-Command,Invoke-WebRequest,
+                New-Object,Write-Host,Write-Output,
+                Set-ExecutionPolicy,Start-Process,Stop-Process},
+  sensitive=false,
+  morecomment=[l]{\#},
+  morestring=[b]",
+  morestring=[b]'
+}
+
+% ── C ───────────────────────────────────────────────────────
+\lstdefinestyle{c}{
+  language=C,
+  keywordstyle=\color{code-keyword}\bfseries,
+  stringstyle=\color{code-string},
+  commentstyle=\color{code-comment}\itshape,
+  morekeywords={size_t,ssize_t,off_t,pid_t,uid_t,gid_t,
+                uint8_t,uint16_t,uint32_t,uint64_t,
+                int8_t,int16_t,int32_t,int64_t,NULL},
+  emph={malloc,calloc,realloc,free,strcpy,strncpy,strcat,
+        sprintf,snprintf,gets,fgets,system,execve,execl,
+        fork,socket,bind,listen,accept,connect,send,recv},
+  emphstyle=\color{code-builtin}\bfseries
+}
+
+% ── C++ ─────────────────────────────────────────────────────
+\lstdefinestyle{cpp}{
+  language=C++,
+  keywordstyle=\color{code-keyword}\bfseries,
+  stringstyle=\color{code-string},
+  commentstyle=\color{code-comment}\itshape,
+  morekeywords={nullptr,constexpr,override,final,noexcept,
+                auto,decltype,static_assert,template,typename},
+  emph={std,string,vector,map,unordered_map,set,pair,
+        cout,cin,endl,make_shared,make_unique,move,forward},
+  emphstyle=\color{code-function}
+}
+
+% ── Go ──────────────────────────────────────────────────────
+\lstdefinestyle{go}{
+  language={},
+  basicstyle=\ttfamily\fontsize{8.2pt}{11pt}\selectfont\color{code-fg},
+  keywordstyle=\color{code-keyword}\bfseries,
+  stringstyle=\color{code-string},
+  commentstyle=\color{code-comment}\itshape,
+  morekeywords={package,import,func,var,const,type,struct,
+                interface,map,chan,go,defer,select,
+                if,else,switch,case,default,for,range,
+                return,break,continue,fallthrough,goto},
+  emph={make,new,len,cap,append,copy,delete,close,panic,recover},
+  emphstyle=\color{code-function},
+  sensitive=true,
+  morecomment=[l]{//},
+  morecomment=[s]{/*}{*/},
+  morestring=[b]",
+  morestring=[b]`
+}
+
+% ── Ruby ────────────────────────────────────────────────────
+\lstdefinestyle{ruby}{
+  language=Ruby,
+  keywordstyle=\color{code-keyword}\bfseries,
+  stringstyle=\color{code-string},
+  commentstyle=\color{code-comment}\itshape,
+  morekeywords={begin,rescue,ensure,raise,yield,lambda,
+                proc,alias,undef,defined,super,self},
+  emph={puts,gets,print,p,pp,require,require_relative,
+        include,extend,attr_accessor,attr_reader,attr_writer},
+  emphstyle=\color{code-function}
+}
+
+% ── SQL ─────────────────────────────────────────────────────
+\lstdefinestyle{sql}{
+  language=SQL,
+  keywordstyle=\color{code-operator}\bfseries,
+  stringstyle=\color{code-string},
+  commentstyle=\color{code-comment}\itshape,
+  morekeywords={SELECT,FROM,WHERE,AND,OR,NOT,LIKE,IN,BETWEEN,
+                IS,NULL,ORDER,BY,GROUP,HAVING,UNION,ALL,
+                INSERT,INTO,VALUES,UPDATE,SET,DELETE,CREATE,
+                ALTER,DROP,TABLE,DATABASE,INDEX,VIEW,JOIN,
+                INNER,LEFT,RIGHT,OUTER,ON,AS,DISTINCT,LIMIT,
+                OFFSET,ASC,DESC,PRIMARY,KEY,FOREIGN,REFERENCES,
+                DEFAULT,TRUNCATE,EXEC,EXECUTE,CAST,CONVERT},
+  sensitive=false
+}
+
+% ── JavaScript ──────────────────────────────────────────────
+\lstdefinestyle{javascript}{
+  language=JavaScript,
+  keywordstyle=\color{code-keyword}\bfseries,
+  stringstyle=\color{code-string},
+  commentstyle=\color{code-comment}\itshape,
+  morekeywords={const,let,var,async,await,class,extends,
+                constructor,static,super,yield,of,in,
+                instanceof,typeof,new,delete,void,
+                throw,try,catch,finally,import,export,from,default},
+  emph={console,document,window,process,require,module,
+        exports,fetch,Promise,setTimeout,setInterval,
+        JSON,Math,Array,Object,String,Number,Boolean},
+  emphstyle=\color{code-function}
+}
+
+% ── PHP ─────────────────────────────────────────────────────
+\lstdefinestyle{php}{
+  language=PHP,
+  keywordstyle=\color{code-keyword}\bfseries,
+  stringstyle=\color{code-string},
+  commentstyle=\color{code-comment}\itshape,
+  morekeywords={function,class,public,private,protected,static,
+                abstract,interface,trait,namespace,use,extends,
+                implements,echo,print,return,if,else,elseif,
+                foreach,while,for,switch,case,break,continue,
+                new,null,true,false,try,catch,finally,throw}
+}
+
+% ── Java ────────────────────────────────────────────────────
+\lstdefinestyle{java}{
+  language=Java,
+  keywordstyle=\color{code-keyword}\bfseries,
+  stringstyle=\color{code-string},
+  commentstyle=\color{code-comment}\itshape,
+  morekeywords={var,record,sealed,permits,instanceof,
+                synchronized,volatile,transient,native,strictfp},
+  emph={System,String,Integer,Double,Boolean,ArrayList,
+        HashMap,LinkedList,HashSet,Scanner,Math,Object,
+        Class,Arrays,Collections},
+  emphstyle=\color{code-type}
+}
+
+% ── Assembly ────────────────────────────────────────────────
+\lstdefinestyle{asm}{
+  language={[x86masm]Assembler},
+  keywordstyle=\color{code-operator}\bfseries,
+  commentstyle=\color{code-comment}\itshape,
+  morekeywords={section,global,extern,bits,org,equ,times,
+                db,dw,dd,dq,resb,resw,resd,resq},
+  emph={mov,push,pop,call,ret,jmp,je,jne,jg,jl,jge,jle,
+        ja,jb,jae,jbe,add,sub,mul,imul,div,idiv,
+        xor,and,or,not,neg,shl,shr,sar,lea,cmp,test,
+        nop,leave,enter,syscall,int,pushad,popad,
+        eax,ebx,ecx,edx,esi,edi,esp,ebp,
+        rax,rbx,rcx,rdx,rsi,rdi,rsp,rbp},
+  emphstyle=\color{code-type}\bfseries
+}
+
+% ── JSON ────────────────────────────────────────────────────
+\lstdefinestyle{json}{
+  language={},
+  basicstyle=\ttfamily\fontsize{8.2pt}{11pt}\selectfont\color{code-fg},
+  morestring=[b]",
+  stringstyle=\color{code-string},
+  literate=
+    *{:}{{{\color{code-operator}{:}}}}{1}
+     {,}{{{\color{code-operator}{,}}}}{1}
+     {\{}{{{\color{code-keyword}{\{}}}}{1}
+     {\}}{{{\color{code-keyword}{\}}}}}{1}
+     {[}{{{\color{code-keyword2}{[}}}}{1}
+     {]}{{{\color{code-keyword2}{]}}}}{1}
+}
+
+% ── XML/HTML ────────────────────────────────────────────────
+\lstdefinestyle{xml}{
+  language=XML,
+  keywordstyle=\color{code-function}\bfseries,
+  stringstyle=\color{code-string},
+  commentstyle=\color{code-comment}\itshape,
+  morekeywords={xmlns,version,encoding,type,href,src,
+                class,id,style,name,value,action,method}
+}
+
+% ── YAML ────────────────────────────────────────────────────
+\lstdefinestyle{yaml}{
+  language={},
+  basicstyle=\ttfamily\fontsize{8.2pt}{11pt}\selectfont\color{code-fg},
+  keywordstyle=\color{code-operator}\bfseries,
+  stringstyle=\color{code-string},
+  commentstyle=\color{code-comment}\itshape,
+  sensitive=true,
+  morecomment=[l]{\#},
+  morestring=[b]",
+  morestring=[b]'
+}
+
+% ── Pandoc highlighting macros ───────────────────────────────
+$if(highlighting-macros)$
+$highlighting-macros$
+$endif$
+
+% ── Shaded — VS Code style: border-left accent + rounded corners ─
+%
+%   Estructura visual (de izquierda a derecha):
+%   │ accent line (4pt) │ gutter números │  code area (dark bg)  │
+%
+\usepackage{framed}
+\usepackage{mdframed}
+
+% Color del fondo del bloque Shaded de Pandoc
+\definecolor{shadecolor}{HTML}{282C34}
+
+\makeatletter
+\@ifundefined{Shaded}{%
+  \newenvironment{Shaded}{%
+    \begin{mdframed}[
+      backgroundcolor=code-bg,
+      leftline=false,
+      rightline=false,
+      topline=false,
+      bottomline=false,
+      linewidth=0pt,
+      innerleftmargin=14pt,
+      innerrightmargin=14pt,
+      innertopmargin=10pt,
+      innerbottommargin=10pt,
+      skipabove=16pt,
+      skipbelow=16pt,
+      roundcorner=4pt,
+      outerlinewidth=0.6pt,
+      outerlinecolor=code-border
+    ]%
+  }{\end{mdframed}}%
+}{%
+  \renewenvironment{Shaded}{%
+    \begin{mdframed}[
+      backgroundcolor=code-bg,
+      leftline=false,
+      rightline=false,
+      topline=false,
+      bottomline=false,
+      linewidth=0pt,
+      innerleftmargin=14pt,
+      innerrightmargin=14pt,
+      innertopmargin=10pt,
+      innerbottommargin=10pt,
+      skipabove=16pt,
+      skipbelow=16pt,
+      roundcorner=4pt,
+      outerlinewidth=0.6pt,
+      outerlinecolor=code-border
+    ]%
+  }{\end{mdframed}}%
+}
+\makeatother
+
+% ── Tokens Pandoc → paleta One Dark Pro ─────────────────────
+\providecommand{\KeywordTok}[1]{#1}
+\providecommand{\DataTypeTok}[1]{#1}
+\providecommand{\DecValTok}[1]{#1}
+\providecommand{\BaseNTok}[1]{#1}
+\providecommand{\FloatTok}[1]{#1}
+\providecommand{\ConstantTok}[1]{#1}
+\providecommand{\CharTok}[1]{#1}
+\providecommand{\SpecialCharTok}[1]{#1}
+\providecommand{\StringTok}[1]{#1}
+\providecommand{\VerbatimStringTok}[1]{#1}
+\providecommand{\SpecialStringTok}[1]{#1}
+\providecommand{\ImportTok}[1]{#1}
+\providecommand{\CommentTok}[1]{#1}
+\providecommand{\DocumentationTok}[1]{#1}
+\providecommand{\AnnotationTok}[1]{#1}
+\providecommand{\CommentVarTok}[1]{#1}
+\providecommand{\OtherTok}[1]{#1}
+\providecommand{\FunctionTok}[1]{#1}
+\providecommand{\VariableTok}[1]{#1}
+\providecommand{\ControlFlowTok}[1]{#1}
+\providecommand{\OperatorTok}[1]{#1}
+\providecommand{\BuiltInTok}[1]{#1}
+\providecommand{\ExtensionTok}[1]{#1}
+\providecommand{\PreprocessorTok}[1]{#1}
+\providecommand{\AttributeTok}[1]{#1}
+\providecommand{\RegionMarkerTok}[1]{#1}
+\providecommand{\InformationTok}[1]{#1}
+\providecommand{\WarningTok}[1]{#1}
+\providecommand{\AlertTok}[1]{#1}
+\providecommand{\ErrorTok}[1]{#1}
+\providecommand{\NormalTok}[1]{#1}
+
+% Tokens → colores One Dark Pro
+\renewcommand{\KeywordTok}[1]{\textcolor{code-keyword}{\textbf{#1}}}
+\renewcommand{\DataTypeTok}[1]{\textcolor{code-type}{#1}}
+\renewcommand{\DecValTok}[1]{\textcolor{code-number}{#1}}
+\renewcommand{\BaseNTok}[1]{\textcolor{code-number}{#1}}
+\renewcommand{\FloatTok}[1]{\textcolor{code-number}{#1}}
+\renewcommand{\ConstantTok}[1]{\textcolor{code-constant}{\textbf{#1}}}
+\renewcommand{\CharTok}[1]{\textcolor{code-string}{#1}}
+\renewcommand{\SpecialCharTok}[1]{\textcolor{code-special}{#1}}
+\renewcommand{\StringTok}[1]{\textcolor{code-string}{#1}}
+\renewcommand{\VerbatimStringTok}[1]{\textcolor{code-string}{#1}}
+\renewcommand{\SpecialStringTok}[1]{\textcolor{code-special}{#1}}
+\renewcommand{\ImportTok}[1]{\textcolor{code-keyword2}{\textbf{#1}}}
+\renewcommand{\CommentTok}[1]{\textcolor{code-comment}{\textit{#1}}}
+\renewcommand{\DocumentationTok}[1]{\textcolor{code-comment}{\textit{#1}}}
+\renewcommand{\AnnotationTok}[1]{\textcolor{code-comment}{\textit{#1}}}
+\renewcommand{\CommentVarTok}[1]{\textcolor{code-comment}{\textit{#1}}}
+\renewcommand{\OtherTok}[1]{\textcolor{code-fg}{#1}}
+\renewcommand{\FunctionTok}[1]{\textcolor{code-function}{#1}}
+\renewcommand{\VariableTok}[1]{\textcolor{code-variable}{#1}}
+\renewcommand{\ControlFlowTok}[1]{\textcolor{code-keyword}{\textbf{#1}}}
+\renewcommand{\OperatorTok}[1]{\textcolor{code-operator}{#1}}
+\renewcommand{\BuiltInTok}[1]{\textcolor{code-builtin}{\textbf{#1}}}
+\renewcommand{\ExtensionTok}[1]{\textcolor{code-fg}{#1}}
+\renewcommand{\PreprocessorTok}[1]{\textcolor{code-keyword2}{#1}}
+\renewcommand{\AttributeTok}[1]{\textcolor{code-type}{#1}}
+\renewcommand{\RegionMarkerTok}[1]{\textcolor{code-fg}{#1}}
+\renewcommand{\InformationTok}[1]{\textcolor{code-comment}{\textit{#1}}}
+\renewcommand{\WarningTok}[1]{\textcolor{code-builtin}{\textbf{#1}}}
+\renewcommand{\AlertTok}[1]{\textcolor{code-builtin}{\textbf{#1}}}
+\renewcommand{\ErrorTok}[1]{\textcolor{code-builtin}{\underline{\textbf{#1}}}}
+\renewcommand{\NormalTok}[1]{\textcolor{code-fg}{#1}}
+
+% ── Código inline — badge estilo VS Code ─────────────────────
+%    Fondo oscuro + bordes redondeados simulados con padding y color
+\let\oldtexttt\texttt
+\renewcommand{\texttt}[1]{%
+  \begingroup
+  \setlength{\fboxsep}{3.8pt}%
+  \colorbox{code-bg}{%
+    \oldtexttt{\fontsize{7.8pt}{9pt}\selectfont\color{code-fg} #1}%
+  }%
+  \endgroup
+}
+
+% ── BLOCKQUOTES ─────────────────────────────────────────────
+\usepackage{mdframed}
+\newmdenv[
+  rightline=false,
+  bottomline=false,
+  topline=false,
+  linewidth=3pt,
+  linecolor=blockquote-border,
+  backgroundcolor=white,
+  skipabove=\parskip,
+  innerleftmargin=12pt,
+  innerrightmargin=0pt,
+  innertopmargin=5pt,
+  innerbottommargin=5pt
+]{customblockquote}
+
+\renewenvironment{quote}{%
+  \begin{customblockquote}
+  \list{}{\rightmargin=0em\leftmargin=0em}%
+  \item\relax\color{blockquote-text}\ignorespaces
+}{%
+  \unskip\unskip\endlist
+  \end{customblockquote}
+}
+
+% ── HIPERVÍNCULOS ───────────────────────────────────────────
+\usepackage{xurl}
+\usepackage[
+  colorlinks=true,
+  linkcolor=link-color,
+  urlcolor=url-color,
+  citecolor=url-color,
+  breaklinks=true,
+  pdftitle={$title$},
+  pdfauthor={$for(author)$$author$$sep$, $endfor$}
+]{hyperref}
+\usepackage{bookmark}
+\urlstyle{same}
+
+% ── NUMERACIÓN DE PÁGINAS SIMPLE ────────────────────────────
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+
+\fancypagestyle{plain}{%
+  \fancyhf{}%
+  \fancyfoot[C]{\small\thepage}%
+  \renewcommand{\headrulewidth}{0pt}%
+  \renewcommand{\footrulewidth}{0pt}%
+}
+
+\fancypagestyle{frontstyle}{%
+  \fancyhf{}%
+  \fancyfoot[C]{\small\thepage}%
+  \renewcommand{\headrulewidth}{0pt}%
+  \renewcommand{\footrulewidth}{0pt}%
+}
+
+% ── SECCIONES ───────────────────────────────────────────────
+\usepackage{titlesec}
+
+\titleformat{\section}
+  {\color[HTML]{2D2D2D}\Large\bfseries\raggedright}
+  {\color[HTML]{2D2D2D}\thesection\hspace{0.7em}}{0pt}{}{}
+
+\newcounter{sectioncount}
+\setcounter{sectioncount}{0}
+\pretocmd{\section}{%
+  \ifnum\value{sectioncount}>0\clearpage\fi
+  \stepcounter{sectioncount}%
+}{}{}
+
+\titleformat{\subsection}
+  {\color[HTML]{2D2D2D}\large\bfseries\raggedright}
+  {\color[HTML]{2D2D2D}\thesubsection\hspace{0.5em}}{0pt}{}{}
+
+\titleformat{\subsubsection}
+  {\color[HTML]{2D2D2D}\large\bfseries\raggedright}
+  {\color[HTML]{2D2D2D}\thesubsubsection\hspace{0.5em}}{0pt}{}
+
+\titleformat{\paragraph}
+  {\color{black}\normalsize\bfseries\itshape}
+  {\theparagraph\hspace{0.5em}}{0pt}{}
+
+\titleformat{\subparagraph}
+  {\color{black}\normalsize\itshape}
+  {\thesubparagraph\hspace{0.5em}}{0pt}{}
+
+\titlespacing*{\section}       {0pt}{1.5\baselineskip}{0.5\baselineskip}
+\titlespacing*{\subsection}    {0pt}{1\baselineskip}{0.3\baselineskip}
+\titlespacing*{\subsubsection} {0pt}{0.8\baselineskip}{0.2\baselineskip}
+\titlespacing*{\paragraph}     {0pt}{6pt}{2pt}
+\titlespacing*{\subparagraph}  {0pt}{4pt}{2pt}
+
+% ── TABLA DE CONTENIDOS ─────────────────────────────────────
+\usepackage{titletoc}
+\renewcommand{\contentsname}{Table of Contents}
+\contentsmargin{2em}
+
+\titlecontents{section}
+  [1.5em]{\addvspace{6pt}\bfseries\color{black}}
+  {\color{black}\contentslabel{1.5em}}{}
+  {\hfill\color{black}\thecontentspage}
+
+\titlecontents{subsection}
+  [3.5em]{\addvspace{2pt}\small\color{black}}
+  {\contentslabel{2em}}{}
+  {\titlerule*[0.5em]{.}\thecontentspage}
+
+\titlecontents{subsubsection}
+  [6em]{\addvspace{1pt}\footnotesize\color{black}}
+  {\contentslabel{2.5em}}{}
+  {\titlerule*[0.5em]{.}\thecontentspage}
+
+% ── UTILIDADES ──────────────────────────────────────────────
+\usepackage{microtype}
+\usepackage{soul}
+\usepackage{calc}
+\usepackage{etoolbox}
+\usepackage{pagecolor}
+\usepackage{afterpage}
+
+\widowpenalty=10000
+\clubpenalty=10000
+
+% ── PANDOC COMPATIBILITY ────────────────────────────────────
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+
+% ── PORTADA ─────────────────────────────────────────────────
+\makeatletter
+\renewcommand{\maketitle}{%
+  \begin{titlepage}
+    \coverFont
+    \newgeometry{left=6cm, top=2cm, bottom=2cm, right=2cm}
+    \newpagecolor{titlepage-bg}\afterpage{\restorepagecolor}
+    \thispagestyle{empty}
+
+    \begin{tikzpicture}[remember picture, overlay]
+      \fill[sidebar-cover]
+        (current page.north west)
+        rectangle ([xshift=4.7cm]current page.south west);
+      \draw[sidebar-cover, line width=2.5pt, opacity=0.85]
+        ([xshift=4.7cm]current page.north west)
+        -- ([xshift=4.7cm]current page.south west);
+    \end{tikzpicture}
+
+    \begin{flushleft}
+    \noindent\\[-1em]
+    \color{title-text}
+    \makebox[0pt][l]{\textcolor{title-text}{\rule{1.3\textwidth}{3pt}}}
+    \par\noindent
+    {
+      \setstretch{1.4}
+      \vfill
+
+      {\Huge\bfseries\color{title-text} $title$}
+
+      $if(subtitle)$
+      \vskip 0.8em
+      {\Large\color{subtitle-text} $subtitle$}
+      $endif$
+
+      \vskip 3.5em
+
+      $for(author)$
+      {\large\color{subtitle-text} $author$}\\[0.4em]
+      $endfor$
+
+      $if(version)$
+      \vskip 0.4em
+      {\normalsize\bfseries\color{title-text} $version$}
+      $endif$
+
+      $if(description)$
+      \vskip 1.8em
+      {\small\color{subtitle-text} $description$}
+      $endif$
+
+      \vfill
+    }
+    {\normalsize\color{subtitle-text} $date$}
+    \vskip 1em
+    \end{flushleft}
+  \end{titlepage}
+  \restoregeometry
+  \setcounter{page}{1}
+}
+\makeatother
+
+% ══════════════════════════════════════════════════════════════
+\begin{document}
+
+$if(title)$
+\maketitle
+$endif$
+
+$if(toc)$
+\newpage
+\pagenumbering{roman}
+\pagestyle{frontstyle}
+\setcounter{page}{1}
+\tableofcontents
+\newpage
+\pagenumbering{arabic}
+\setcounter{page}{1}
+\pagestyle{fancy}
+$endif$
+
+$body$
+
+\end{document}

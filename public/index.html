@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RepDown — Studio</title>
+<link rel="stylesheet" href="styles.css">
+<style>
+body { overflow: hidden; }
+.index-page { display: flex; flex-direction: column; height: 100vh; }
+.index-page .app { flex-direction: row; }
+/* Progress bar pulse when server is extracting */
+@keyframes pulse-bar {
+  0%,100% { opacity: 1; }
+  50%      { opacity: .45; }
+}
+.up-bar.processing {
+  background: linear-gradient(90deg, #1a6fba, #4ec9b0);
+  animation: pulse-bar 1.2s ease infinite;
+  width: 100% !important;
+}
+</style>
+</head>
+<body class="index-page">
+
+<!-- NICKNAME SCREEN -->
+<div class="ns" id="ns">
+  <div class="ns-card">
+    <div class="ns-logo">
+      <div class="ns-logo-icon" style="background:transparent">R</div>
+      <div class="ns-brand">RepDown</div>
+    </div>
+    <div class="ns-sub">choose your operator handle · no account needed</div>
+    <input class="ns-in" id="nickIn" placeholder="Enter your nickname..." maxlength="24"/>
+    <div class="ns-suggs">
+      <div class="ns-sugg" onclick="setNick('Zorro')">Zorro</div>
+      <div class="ns-sugg" onclick="setNick('Cipher')">Cipher</div>
+      <div class="ns-sugg" onclick="setNick('Raven')">Raven</div>
+      <div class="ns-sugg" onclick="setNick('Atlas')">Atlas</div>
+      <div class="ns-sugg" onclick="setNick('Ghost')">Ghost</div>
+      <div class="ns-sugg" onclick="setNick('Nova')">Nova</div>
+    </div>
+    <button class="btn btn-primary" id="enterBtn" style="width:100%;justify-content:center;padding:12px;font-size:13px">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      Enter Studio
+    </button>
+  </div>
+</div>
+
+<div class="app" id="app" style="display:none">
+  <!-- SIDEBAR -->
+  <aside class="sb">
+    <!-- Logo — identical markup to editor topbar -->
+    <div class="sb-logo">
+      <a class="logo-link" href="/" title="RepDown Dashboard">
+        <div class="logo-icon">
+          <img src="../image.png" alt="R" onerror="this.style.display='none';this.parentElement.textContent='R'">
+        </div>
+        <span class="logo-text"><span class="w1">Rep</span><span class="w2">Down</span></span>
+      </a>
+    </div>
+
+    <nav class="sb-nav">
+      <span class="sb-section-label">Navigation</span>
+
+      <div class="sb-item on" id="nv-all" onclick="setView('all')">
+        <span class="sb-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></span>
+        All Projects
+        <span class="sb-badge" id="nb-all">0</span>
+      </div>
+
+      <div class="sb-item" id="nv-rec" onclick="setView('recent')">
+        <span class="sb-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+        Recent
+        <span class="sb-badge" id="nb-rec">0</span>
+      </div>
+
+      <div class="sb-item" id="nv-tpl" onclick="setView('templates')">
+        <span class="sb-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/></svg></span>
+        Templates
+        <span class="sb-badge" id="nb-tpl">0</span>
+      </div>
+
+      <div class="sb-divider"></div>
+      <span class="sb-section-label">System</span>
+
+      <div class="sb-item" id="nv-sys" onclick="setView('system')">
+        <span class="sb-ico"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg></span>
+        System Status
+      </div>
+
+      <div class="sb-divider"></div>
+      <span class="sb-section-label">Tags</span>
+      <div id="tagList"><div style="font-size:9px;color:#555;padding:4px 10px;font-family:Consolas,monospace">No tags yet</div></div>
+      <div id="clearTagBtn" style="display:none">
+        <div class="tag-clear" onclick="clearTagF()">
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          Clear filter
+        </div>
+      </div>
+    </nav>
+
+    <div class="sb-foot">
+      <div class="user-card">
+        <div class="u-avatar" id="uAvatar">?</div>
+        <div>
+          <div class="u-name" id="sbUser">—</div>
+          <div class="u-online"><div class="u-dot"></div>online</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <!-- TOP BAR (same visual language as editor topbar) -->
+    <div class="index-topbar">
+      <div class="tb-title" id="tbTitle">All Projects <span class="tb-sub" id="tbCount">0 projects</span></div>
+      <div class="search">
+        <svg class="search-ico" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input id="searchIn" placeholder="Search projects..." oninput="render()"/>
+      </div>
+      <button class="btn btn-teal" onclick="openUpload()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+        Import .zip
+      </button>
+      <button class="btn btn-backup" id="backupBtn" onclick="backupAll()" title="Download all projects as a single ZIP backup">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Backup All
+      </button>
+      <button class="btn btn-primary" onclick="openNew()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New Project
+      </button>
+    </div>
+
+    <div class="content">
+      <!-- STATS -->
+      <div class="stats-row">
+        <div class="stat">
+          <div class="stat-ico ic-p"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg></div>
+          <div><div class="stat-n" id="stAll">0</div><div class="stat-l">projects</div></div>
+        </div>
+        <div class="stat">
+          <div class="stat-ico ic-t"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+          <div><div class="stat-n" id="stToday">0</div><div class="stat-l">today</div></div>
+        </div>
+        <div class="stat">
+          <div class="stat-ico ic-g"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></div>
+          <div><div class="stat-n" id="stTags">0</div><div class="stat-l">tags</div></div>
+        </div>
+        <div class="stat">
+          <div class="stat-ico ic-o"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/></svg></div>
+          <div><div class="stat-n" id="stTpls">0</div><div class="stat-l">templates</div></div>
+        </div>
+      </div>
+
+      <div class="sec-hdr">
+        <span class="sec-ttl" id="secLbl">YOUR PROJECTS</span>
+        <div class="sec-line"></div>
+      </div>
+      <div class="grid" id="grid"></div>
+    </div>
+  </main>
+</div>
+
+<!-- NEW PROJECT MODAL -->
+<div class="ov" id="newM">
+  <div class="modal">
+    <div class="m-t">New Project</div>
+    <div class="m-s">create a new markdown → pdf workspace</div>
+    <div class="fg">
+      <label class="flbl">Project Name</label>
+      <input class="finput" id="newName" placeholder="OSCP Report — Target Corp" onkeydown="if(event.key==='Enter')doCreate()"/>
+    </div>
+    <div class="fg">
+      <label class="flbl">Template</label>
+      <div class="tpl-grid" id="tplGrid"></div>
+    </div>
+    <div class="m-acts">
+      <button class="btn btn-ghost" onclick="closeOv('newM')">Cancel</button>
+      <button class="btn btn-primary" onclick="doCreate()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        Create →
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT MODAL -->
+<div class="ov" id="upM">
+  <div class="modal">
+    <div class="m-t">Import Project</div>
+    <div class="m-s">upload a .zip archive of your project</div>
+    <div class="fg">
+      <label class="flbl">Name (optional)</label>
+      <input class="finput" id="upName" placeholder="Leave blank to use archive name"/>
+    </div>
+    <div class="fg">
+      <label class="flbl">Archive</label>
+      <div class="dz" id="dzEl" onclick="document.getElementById('dzIn').click()" ondragover="dzOv(event)" ondragleave="dzLv()" ondrop="dzDrop(event)">
+        <div class="dz-ico">📦</div>
+        <div class="dz-t" id="dzTxt">Drop .zip / .tar.gz here, or click to browse</div>
+        <div class="dz-s">max 500 MB</div>
+      </div>
+      <input type="file" id="dzIn" accept=".zip,.tar,.tar.gz,.tgz" style="display:none" onchange="dzSel(event)"/>
+    </div>
+    <div class="m-acts">
+      <button class="btn btn-ghost" onclick="closeOv('upM')">Cancel</button>
+      <button class="btn btn-primary" id="upBtn" disabled onclick="doUpload()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/></svg>
+        Upload & Import
+      </button>
+    </div>
+    <!-- PROGRESS BAR -->
+    <div id="upProgress" style="display:none;margin-top:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+        <span class="up-lbl" style="font-size:10px;color:#555;font-family:Consolas,monospace">Uploading...</span>
+        <span class="up-pct" style="font-size:10px;color:#5aacf5;font-family:Consolas,monospace;font-weight:600">0%</span>
+      </div>
+      <div style="height:4px;background:#2a2a2a;border-radius:99px;overflow:hidden">
+        <div class="up-bar" style="height:100%;width:0%;background:#1a6fba;border-radius:99px;transition:width .15s ease"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TAG MODAL -->
+<div class="ov" id="tagM">
+  <div class="modal" style="max-width:380px">
+    <div class="m-t">Add Tag</div>
+    <div class="m-s" id="tagMSub"></div>
+    <div class="fg">
+      <label class="flbl">Tag Name</label>
+      <input class="finput" id="tagIn" placeholder="e.g. oscp, redteam, draft" maxlength="24" onkeydown="if(event.key==='Enter')doTag()"/>
+    </div>
+    <div class="sugg-row">
+      <div class="sugg" onclick="qt('oscp')">oscp</div>
+      <div class="sugg" onclick="qt('redteam')">redteam</div>
+      <div class="sugg" onclick="qt('draft')">draft</div>
+      <div class="sugg" onclick="qt('submitted')">submitted</div>
+      <div class="sugg" onclick="qt('pentest')">pentest</div>
+      <div class="sugg" onclick="qt('urgent')">urgent</div>
+    </div>
+    <div class="m-acts">
+      <button class="btn btn-ghost" onclick="closeOv('tagM')">Cancel</button>
+      <button class="btn btn-primary" onclick="doTag()">Add Tag</button>
+    </div>
+  </div>
+</div>
+
+<!-- RENAME PROJECT MODAL -->
+<div class="ov" id="renameM">
+  <div class="modal" style="max-width:380px">
+    <div class="m-t">Rename Project</div>
+    <div class="m-s" id="renameMSub"></div>
+    <div class="fg">
+      <label class="flbl">New Name</label>
+      <input class="finput" id="renameIn" placeholder="Project name..." maxlength="80" onkeydown="if(event.key==='Enter')doRenameP()"/>
+    </div>
+    <div class="m-acts">
+      <button class="btn btn-ghost" onclick="closeOv('renameM')">Cancel</button>
+      <button class="btn btn-primary" onclick="doRenameP()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        Rename
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script>
+const TAGS_COL=[['#b96aff','rgba(185,106,255,.11)'],['#3dd9d0','rgba(61,217,208,.11)'],['#3de87a','rgba(61,232,122,.11)'],['#f5d030','rgba(245,208,48,.11)'],['#f59038','rgba(245,144,56,.11)'],['#ff5fa0','rgba(255,95,160,.11)'],['#5b52f5','rgba(91,82,245,.11)'],['#ff4f4f','rgba(255,79,79,.11)']];
+const TPL_ICONS={'oscp-purple':'🟣','redteam-dark':'🔴','corporate-blue':'🔵','minimalist':'⬜','thesis-style':'📚','osint-report':'🔍'};
+const tplE=id=>TPL_ICONS[id]||'📄';
+let projects=[],templates=[],nick='',selTpl='',view='all',tagF=null,upFile=null,tagPid=null;
+
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('nickIn').addEventListener('keydown',e=>{if(e.key==='Enter')confirmNick();});
+  document.getElementById('enterBtn').addEventListener('click',confirmNick);
+  document.querySelectorAll('.ov').forEach(o=>o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('open');}));
+  const saved=localStorage.getItem('repdown_nickname');
+  if(saved&&saved.trim()){nick=saved.trim();boot();}
+  else{setTimeout(()=>document.getElementById('nickIn').focus(),100);}
+});
+function setNick(n){document.getElementById('nickIn').value=n;}
+function confirmNick(){
+  const v=document.getElementById('nickIn').value.trim();
+  if(!v){document.getElementById('nickIn').focus();return;}
+  nick=v;localStorage.setItem('repdown_nickname',nick);boot();
+}
+async function boot(){
+  document.getElementById('ns').style.display='none';
+  document.getElementById('app').style.display='flex';
+  document.getElementById('sbUser').textContent=nick;
+  document.getElementById('uAvatar').textContent=nick[0].toUpperCase();
+  await load();
+}
+async function load(){
+  try{
+    const[pr,tr]=await Promise.all([fetch('/api/projects').then(r=>r.json()),fetch('/api/templates').then(r=>r.json())]);
+    projects=Array.isArray(pr)?pr:[];templates=Array.isArray(tr)?tr:[];
+  }catch{projects=[];templates=[];}
+  buildTagList();updateStats();render();
+}
+function buildTpls(){
+  const g=document.getElementById('tplGrid');
+  g.innerHTML=templates.map(t=>`<div class="tpl-o${t.id===selTpl?' sel':''}" onclick="selT('${t.id}')">\
+    <div class="tpl-oi">${tplE(t.id)}</div>\
+    <div class="tpl-on">${H(t.name||t.id)}</div>\
+    <div class="tpl-od">${H(t.description||'')}</div></div>`).join('');
+  if(!selTpl&&templates.length){selTpl=templates[0].id;buildTpls();}
+}
+function selT(id){selTpl=id;buildTpls();}
+function buildTagList(){
+  const all=[...new Set(projects.flatMap(p=>p.tags||[]))];
+  const el=document.getElementById('tagList');
+  if(!all.length){el.innerHTML='<div style="font-size:9px;color:#555;padding:4px 10px;font-family:Consolas,monospace">No tags yet</div>';return;}
+  el.innerHTML=all.map((t,i)=>{
+    const[c]=TAGS_COL[i%TAGS_COL.length];
+    const isOn=tagF===t;
+    return`<div class="tag-item${isOn?' on':''}" onclick="filterTag('${H(t)}')" style="${isOn?'color:'+c:''}">
+      <div class="tag-dot" style="background:${c}"></div>${H(t)}
+      <span style="margin-left:auto;font-size:9px;color:#555">${projects.filter(p=>(p.tags||[]).includes(t)).length}</span>
+    </div>`;
+  }).join('');
+}
+function filterTag(t){
+  if(tagF===t){tagF=null;}else{tagF=t;setView('all');}
+  document.getElementById('clearTagBtn').style.display=tagF?'block':'none';
+  buildTagList();render();
+}
+function clearTagF(){tagF=null;document.getElementById('clearTagBtn').style.display='none';buildTagList();render();}
+function updateStats(){
+  document.getElementById('stAll').textContent=projects.length;
+  document.getElementById('stTags').textContent=[...new Set(projects.flatMap(p=>p.tags||[]))].length;
+  document.getElementById('stTpls').textContent=templates.length;
+  const today=new Date();today.setHours(0,0,0,0);
+  document.getElementById('stToday').textContent=projects.filter(p=>new Date(p.lastModified)>=today).length;
+  document.getElementById('nb-all').textContent=projects.length;
+  document.getElementById('nb-rec').textContent=projects.filter(p=>{const w=new Date();w.setDate(w.getDate()-7);return new Date(p.lastModified)>=w;}).length;
+  document.getElementById('nb-tpl').textContent=templates.length;
+}
+function setView(v){
+  view=v;if(v!=='all'&&v!=='recent')tagF=null;
+  document.getElementById('clearTagBtn').style.display=tagF?'block':'none';
+  ['all','rec','tpl','sys'].forEach(x=>document.getElementById('nv-'+x)?.classList.remove('on'));
+  const map={all:'nv-all',recent:'nv-rec',templates:'nv-tpl',system:'nv-sys'};
+  if(map[v])document.getElementById(map[v]).classList.add('on');
+  render();
+}
+function render(){
+  const q=(document.getElementById('searchIn').value||'').toLowerCase().trim();
+  const grid=document.getElementById('grid');
+  if(view==='system'){
+    document.getElementById('tbTitle').innerHTML='System <span class="tb-sub">status</span>';
+    document.getElementById('secLbl').textContent='SYSTEM CHECKS';
+    grid.innerHTML=`<div class="sys-view">
+      <div class="sys-block"><div class="sys-btitle">Dependencies</div><div class="sys-chips">
+        <div class="sys-chip"><div class="sys-d ok-dot"></div>pandoc</div>
+        <div class="sys-chip"><div class="sys-d ok-dot"></div>xelatex</div>
+        <div class="sys-chip"><div class="sys-d ok-dot"></div>node.js</div>
+        <div class="sys-chip"><div class="sys-d ok-dot"></div>sqlite</div>
+      </div></div>
+      <div class="sys-block"><div class="sys-btitle">Compile Pipeline</div>
+        <div class="pipe-row">
+          <div class="pipe-node" style="color:#9cdcfe">report.md</div>
+          <span style="color:#555">→</span><div class="pipe-node">pandoc</div>
+          <span style="color:#555">→</span><div class="pipe-node" style="color:#4ec9b0">xelatex</div>
+          <span style="color:#555">→</span><div class="pipe-node" style="color:#4ec9b0">.output/report.pdf</div>
+        </div>
+      </div>
+      <div class="sys-block"><div class="sys-btitle">Templates (${templates.length})</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px">${templates.map(t=>`<span style="padding:3px 10px;border-radius:99px;background:rgba(26,111,186,.08);border:1px solid rgba(26,111,186,.2);font-family:Consolas,monospace;font-size:9px;color:#5aacf5">${tplE(t.id)} ${H(t.name||t.id)}</span>`).join('')||'<span style="font-family:Consolas,monospace;font-size:9px;color:#555">No templates loaded</span>'}</div>
+      </div></div>`;return;
+  }
+  if(view==='templates'){
+    document.getElementById('tbTitle').innerHTML=`Templates <span class="tb-sub">${templates.length} available</span>`;
+    document.getElementById('secLbl').textContent='AVAILABLE TEMPLATES';
+    grid.innerHTML=templates.length?templates.map((t,i)=>`
+      <div class="card" style="animation-delay:${i*.04}s" onclick="openNew()">
+        <div class="card-hd"><div class="card-ico">${tplE(t.id)}</div>
+          <div class="card-meta"><div class="card-name">${H(t.name||t.id)}</div><div class="card-tpl">template</div></div>
+        </div>
+        <div style="font-family:Consolas,monospace;font-size:10px;color:#555;margin-bottom:10px">${H(t.description||'')}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px">${(t.tags||[]).map(tag=>`<span style="font-family:Consolas,monospace;font-size:8.5px;padding:2px 8px;border-radius:99px;background:rgba(26,111,186,.08);color:#5aacf5;border:1px solid rgba(26,111,186,.2)">${H(tag)}</span>`).join('')}</div>
+      </div>`).join('')
+    :`<div class="empty"><div class="empty-ico">📋</div><div class="empty-t">No templates</div></div>`;
+    return;
+  }
+  let list=[...projects];
+  if(view==='recent'){
+    const wk=new Date();wk.setDate(wk.getDate()-7);
+    list=list.filter(p=>new Date(p.lastModified)>=wk);
+    document.getElementById('tbTitle').innerHTML='Recent <span class="tb-sub">last 7 days</span>';
+    document.getElementById('secLbl').textContent='LAST 7 DAYS';
+  }else{
+    document.getElementById('tbTitle').innerHTML=`All Projects <span class="tb-sub">${projects.length} project${projects.length!==1?'s':''}</span>`;
+    document.getElementById('secLbl').textContent=tagF?`TAG: ${tagF.toUpperCase()}`:'YOUR PROJECTS';
+  }
+  if(q)list=list.filter(p=>p.name.toLowerCase().includes(q));
+  if(tagF)list=list.filter(p=>(p.tags||[]).includes(tagF));
+  if(!list.length){
+    grid.innerHTML=`<div class="empty"><div class="empty-ico">📂</div><div class="empty-t">No projects found</div><div class="empty-s">${q||tagF?'Try different search or clear filter':'Create your first report to get started'}</div>${!q&&!tagF?`<button class="btn btn-primary" onclick="openNew()"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> New Project</button>`:''}</div>`;return;
+  }
+  grid.innerHTML=list.map((p,i)=>{
+    const tags=p.tags||[];
+    return`<div class="card" style="animation-delay:${i*.03}s" onclick="go('${p.id}')">
+      <div class="card-hd">
+        <div class="card-ico">${tplE(p.template)}</div>
+        <div class="card-meta"><div class="card-name">${H(p.name)}</div><div class="card-tpl">${H(p.template||'default')}</div></div>
+        <div class="card-acts">
+          <div class="ca" title="Open" onclick="event.stopPropagation();go('${p.id}')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></div>
+          <div class="ca edit" title="Rename" onclick="event.stopPropagation();openRenameP('${p.id}','${H(p.name)}')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div>
+          <div class="ca del" title="Delete" onclick="event.stopPropagation();delP('${p.id}','${H(p.name)}')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6M14 11v6"/></svg></div>
+        </div>
+      </div>
+      <div class="card-tags">
+        ${tags.map((t,ti)=>{const[c,bg]=TAGS_COL[ti%TAGS_COL.length];return`<span class="ctag" style="background:${bg};color:${c};border:1px solid ${c}22">${H(t)}<span class="ctag-x" onclick="event.stopPropagation();rmTag('${p.id}','${H(t)}')">×</span></span>`;}).join('')}
+        <span class="tag-add" onclick="event.stopPropagation();openTagM('${p.id}','${H(p.name)}')">
+          <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          + tag
+        </span>
+      </div>
+      <div class="card-ft">
+        <div class="ft-dot"></div>
+        <span>${fmtD(new Date(p.lastModified))}</span>
+        <span class="ft-ago">${ago(new Date(p.lastModified))}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+function go(id){location.href=`/editor?id=${id}&nick=${encodeURIComponent(nick)}`;}
+async function delP(id,name){
+  if(!confirm(`Delete "${name}"?\nThis cannot be undone.`))return;
+  try{const r=await fetch(`/api/projects/${id}`,{method:'DELETE'});if(r.ok){toast(`"${name}" deleted`);await load();}else{const e=await r.json();toast(e.error||'Failed','err');}}catch{toast('Delete failed','err');}
+}
+function openNew(){document.getElementById('newName').value='';buildTpls();openOv('newM');setTimeout(()=>document.getElementById('newName').focus(),80);}
+async function doCreate(){
+  const name=document.getElementById('newName').value.trim();if(!name){toast('Enter a project name','err');return;}
+  try{const r=await fetch('/api/projects',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,template:selTpl,owner:nick})});const p=await r.json();if(p.error){toast(p.error,'err');return;}closeOv('newM');toast(`"${name}" created`);go(p.id);}catch{toast('Create failed','err');}
+}
+function openUpload(){
+  upFile=null;
+  document.getElementById('upName').value='';
+  document.getElementById('dzTxt').textContent='Drop .zip / .tar.gz here, or click to browse';
+  document.getElementById('upBtn').disabled=true;
+  // Reset progress
+  const pb=document.getElementById('upProgress');
+  if(pb){pb.style.display='none';pb.querySelector('.up-bar').style.width='0%';pb.querySelector('.up-pct').textContent='0%';}
+  openOv('upM');
+}
+function dzOv(e){e.preventDefault();document.getElementById('dzEl').classList.add('ov-dz');}
+function dzLv(){document.getElementById('dzEl').classList.remove('ov-dz');}
+function dzDrop(e){e.preventDefault();dzLv();if(e.dataTransfer.files[0])setUF(e.dataTransfer.files[0]);}
+function dzSel(e){if(e.target.files[0])setUF(e.target.files[0]);}
+function setUF(f){
+  upFile=f;
+  const kb=(f.size/1024).toFixed(0);
+  const mb=(f.size/1024/1024).toFixed(1);
+  document.getElementById('dzTxt').textContent=`📦 ${f.name} (${f.size>1048576?mb+' MB':kb+' KB'})`;
+  document.getElementById('upBtn').disabled=false;
+}
+function doUpload(){
+  if(!upFile)return;
+  const btn=document.getElementById('upBtn');
+  const pb=document.getElementById('upProgress');
+  const bar=pb.querySelector('.up-bar');
+  const pct=pb.querySelector('.up-pct');
+  const lbl=pb.querySelector('.up-lbl');
+  btn.disabled=true;
+  btn.innerHTML=`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/></svg> Uploading...`;
+  pb.style.display='block';
+  bar.style.width='0%'; pct.textContent='0%'; lbl.textContent='Uploading...';
+
+  const fd=new FormData();
+  fd.append('file',upFile);
+  const n=document.getElementById('upName').value.trim();
+  if(n)fd.append('name',n);
+
+  const xhr=new XMLHttpRequest();
+  xhr.open('POST','/api/projects/import');
+
+  // Upload progress (0→100%)
+  xhr.upload.onprogress=e=>{
+    if(!e.lengthComputable)return;
+    const p=Math.round(e.loaded/e.total*100);
+    bar.style.width=p+'%';
+    pct.textContent=p+'%';
+    const sent=(e.loaded/1024/1024).toFixed(1);
+    const total=(e.total/1024/1024).toFixed(1);
+    lbl.textContent=`${sent} / ${total} MB`;
+  };
+
+  // Server processing phase (upload done, server extracting)
+  xhr.upload.onload=()=>{
+    bar.style.width='100%';
+    pct.textContent='100%';
+    lbl.textContent='Extracting on server...';
+    bar.classList.add('processing');
+  };
+
+  xhr.onload=()=>{
+    bar.classList.remove('processing');
+    btn.innerHTML=`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/></svg> Upload & Import`;
+    btn.disabled=false;
+    pb.style.display='none';
+    try{
+      const p=JSON.parse(xhr.responseText);
+      if(p.error){toast(p.error,'err');return;}
+      closeOv('upM');
+      toast(`"${p.name}" imported!`);
+      go(p.id);
+    }catch{toast('Server error — check console','err');}
+  };
+
+  xhr.onerror=()=>{
+    bar.classList.remove('processing');
+    btn.disabled=false;
+    btn.innerHTML=`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/></svg> Upload & Import`;
+    pb.style.display='none';
+    toast('Upload failed — network error','err');
+  };
+
+  xhr.ontimeout=()=>{
+    toast('Upload timed out','err');
+    btn.disabled=false;
+    pb.style.display='none';
+  };
+
+  xhr.send(fd);
+}
+function openTagM(id,name){tagPid=id;document.getElementById('tagMSub').textContent=`Adding tag to "${name}"`;document.getElementById('tagIn').value='';openOv('tagM');setTimeout(()=>document.getElementById('tagIn').focus(),80);}
+function qt(t){document.getElementById('tagIn').value=t;}
+async function doTag(){
+  const t=document.getElementById('tagIn').value.trim().toLowerCase();if(!t)return;
+  const p=projects.find(x=>x.id===tagPid);if(!p)return;
+  const tags=[...new Set([...(p.tags||[]),t])];
+  await saveTags(tagPid,tags);closeOv('tagM');toast(`Tag "${t}" added`);
+}
+async function rmTag(id,t){const p=projects.find(x=>x.id===id);if(!p)return;await saveTags(id,(p.tags||[]).filter(x=>x!==t));toast('Tag removed');}
+async function saveTags(id,tags){await fetch(`/api/projects/${id}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({tags})});await load();}
+async function backupAll(){
+  if(!projects.length){toast('No projects to backup','err');return;}
+  const btn=document.getElementById('backupBtn');
+  btn.disabled=true;
+  const orig=btn.innerHTML;
+  btn.innerHTML=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="animation:spin .8s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Zipping...`;
+  try{
+    // Ask server to bundle all projects into one big zip
+    const r=await fetch('/api/projects/backup',{method:'POST'});
+    if(!r.ok){
+      // Server endpoint doesn't exist yet — fallback: download each project individually
+      // and show instructions
+      toast('Server backup endpoint not found — downloading projects individually','err');
+      btn.disabled=false;btn.innerHTML=orig;return;
+    }
+    const blob=await r.blob();
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    const d=new Date();
+    a.download=`repdown-backup-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.zip`;
+    document.body.appendChild(a);a.click();a.remove();
+    URL.revokeObjectURL(url);
+    toast(`✓ Backup downloaded — ${projects.length} project${projects.length!==1?'s':''}`);
+  }catch(e){
+    toast('Backup failed: '+e.message,'err');
+  }
+  btn.disabled=false;btn.innerHTML=orig;
+}
+function openOv(id){document.getElementById(id).classList.add('open');}
+function closeOv(id){document.getElementById(id).classList.remove('open');}
+
+let renamePid=null;
+function openRenameP(id,name){
+  renamePid=id;
+  document.getElementById('renameMSub').textContent=`Renaming "${name}"`;
+  document.getElementById('renameIn').value=name;
+  openOv('renameM');
+  setTimeout(()=>{const i=document.getElementById('renameIn');i.focus();i.select();},80);
+}
+async function doRenameP(){
+  const nv=document.getElementById('renameIn').value.trim();
+  if(!nv)return;
+  try{
+    await fetch(`/api/projects/${renamePid}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:nv})});
+    closeOv('renameM');toast(`Renamed to "${nv}"`);await load();
+  }catch{toast('Rename failed','err');}
+}
+function toast(msg,type='ok'){const c=document.getElementById('toasts');const el=document.createElement('div');el.className=`toast ${type}`;el.innerHTML=`<div class="tdot"></div><span>${H(msg)}</span>`;c.appendChild(el);setTimeout(()=>el.remove(),3200);}
+function H(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function fmtD(d){return d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}
+function ago(d){const s=Date.now()-d.getTime();if(s<60000)return'just now';if(s<3600000)return~~(s/60000)+'m ago';if(s<86400000)return~~(s/3600000)+'h ago';return~~(s/86400000)+'d ago';}
+</script>
+</body>
+</html>

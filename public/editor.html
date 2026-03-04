@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Editor — RepDown</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/dialog/dialog.min.css">
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/markdown/markdown.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/edit/continuelist.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/display/placeholder.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/search/search.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/search/searchcursor.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/addon/dialog/dialog.min.js"></script>
+<script src="/socket.io/socket.io.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+</head>
+<body class="editor">
+
+<div class="app editor-app" id="app">
+
+  <!-- ═══════════════════════════════════════════════════════════
+       TOP BAR
+       ═══════════════════════════════════════════════════════════ -->
+  <div class="editor-topbar">
+
+    <!-- LOGO — identical to index sidebar -->
+    <a class="logo-link" href="/" title="Back to dashboard">
+      <div class="logo-icon">
+        <img src="../image.png" alt="R" onerror="this.style.display='none';this.parentElement.textContent='R'">
+      </div>
+      <span class="logo-text"><span class="w1">Rep</span><span class="w2">Down</span></span>
+    </a>
+
+    <div class="tb-vdiv"></div>
+
+    <!-- PROJECT NAME -->
+    <div class="proj-name" id="projName" onclick="startProjRename()" title="Click to rename">Loading...</div>
+
+    <div class="tb-vdiv"></div>
+
+    <!-- SAVE STATUS -->
+    <div class="save-status">
+      <div class="s-dot saved" id="sdot"></div>
+      <div class="s-label" id="sstat">Saved</div>
+    </div>
+
+    <!-- ONLINE — pushed right via margin-left:auto on online-section -->
+    <div class="online-section" id="onlineSection">
+      <span class="online-label" id="onlineCnt"></span>
+      <div id="usersBar" class="users-bar"></div>
+    </div>
+
+    <div class="tb-vdiv"></div>
+
+    <!-- LABELED ICON BUTTONS -->
+    <button class="ico-btn" title="Keyboard shortcuts" onclick="toggleKeymap(event)" id="kmBtn">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="13" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h.01M12 14h.01M16 14h.01"/></svg>
+      Keys
+    </button>
+
+    <button class="ico-btn" title="Toggle chat panel" onclick="toggleChat()" style="position:relative">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      Chat
+      <span class="chat-badge" id="chatBadge"></span>
+    </button>
+
+    <button class="ico-btn" title="Download project as ZIP" onclick="exportZip()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="2" width="16" height="5" rx="1"/><path d="M12 7v8M9 12l3 3 3-3"/><path d="M4 22h16a1 1 0 0 0 1-1v-3H3v3a1 1 0 0 0 1 1z"/></svg>
+      ZIP
+    </button>
+
+    <button class="ico-btn" title="Download compiled PDF" onclick="exportPdf()" style="color:#f48771">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15v-4h1.5a1.5 1.5 0 0 1 0 3H9M13 15v-4h2M13 13h1.5M17 15v-4h1a2 2 0 0 1 0 4h-1"/></svg>
+      PDF
+    </button>
+
+    <div class="tb-vdiv"></div>
+
+    <select class="eng-select" id="engSel" title="PDF compile engine" style="margin:0 4px">
+      <option value="xelatex">XeLaTeX</option>
+      <option value="pdflatex">pdfLaTeX</option>
+      <option value="lualatex">LuaLaTeX</option>
+      <option value="wkhtmltopdf">wkhtmltopdf</option>
+    </select>
+
+    <button class="compile-btn" id="compBtn" onclick="compile()" style="margin-right:10px">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      Compile
+    </button>
+  </div>
+
+  <!-- ═══ BODY ROW ═══ -->
+  <div class="body">
+
+    <!-- FILE TREE -->
+    <div class="tree-panel" id="treeEl">
+      <div class="panel-header">
+        <span class="ph-title">Files</span>
+        <div class="ph-btn" title="New file" onclick="openNewFile('')">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+        </div>
+        <div class="ph-btn" title="New folder" onclick="openNewFolder('')">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+        </div>
+        <div class="ph-btn" title="Upload files" onclick="triggerUpload('')">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/></svg>
+        </div>
+      </div>
+      <div class="tree-body" id="treeBody"
+        ondragover="rootDragOver(event)" ondragleave="rootDragLeave(event)" ondrop="rootDrop(event)"></div>
+      <input type="file" id="upInputFiles" multiple style="display:none" onchange="handleUpload(event)">
+    </div>
+
+    <!-- RESIZER 1 -->
+    <div class="res" id="res1"></div>
+
+    <!-- EDITOR PANEL -->
+    <div class="ed-panel" id="edPanel">
+
+      <!-- MARKDOWN TOOLBAR -->
+      <div class="md-toolbar" id="mdToolbar">
+        <button class="tb-btn" title="Bold (Ctrl+B)" onclick="wrapSel('**','**')">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 4h8a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/><path d="M6 12h9a4 4 0 0 1 4 4 4 4 0 0 1-4 4H6z"/></svg>
+          B
+        </button>
+        <button class="tb-btn" title="Italic (Ctrl+I)" onclick="wrapSel('*','*')"><em>I</em></button>
+        <button class="tb-btn" title="Strikethrough" onclick="wrapSel('~~','~~')"><s>S</s></button>
+        <div class="tb-sep-v"></div>
+        <button class="tb-btn" title="Heading 1 (Ctrl+1)" onclick="insertHeading(1)">H1</button>
+        <button class="tb-btn" title="Heading 2 (Ctrl+2)" onclick="insertHeading(2)">H2</button>
+        <button class="tb-btn" title="Heading 3 (Ctrl+3)" onclick="insertHeading(3)">H3</button>
+        <div class="tb-sep-v"></div>
+        <button class="tb-btn" title="Bullet list" onclick="insertList('bullet')">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3" cy="6" r="1.5" fill="currentColor"/><circle cx="3" cy="12" r="1.5" fill="currentColor"/><circle cx="3" cy="18" r="1.5" fill="currentColor"/></svg>
+          List
+        </button>
+        <button class="tb-btn" title="Numbered list" onclick="insertList('ordered')">Ordered</button>
+        <div class="tb-sep-v"></div>
+        <button class="tb-btn" title="Blockquote" onclick="insertBlockquote()">Quote</button>
+        <button class="tb-btn" title="Insert table" id="tableBtn" onclick="toggleTablePicker(event)">Table ▾</button>
+        <button class="tb-btn" title="Text color" id="colorBtn" onclick="toggleColorPicker(event)">
+          Color
+          <span class="color-underline" id="colorUnderline"></span>
+        </button>
+        <button class="tb-btn" title="Code block" id="codeBlockBtn" onclick="toggleLangPicker(event)">Block ▾</button>
+        <button class="tb-btn" title="Page break" onclick="insertPageBreak()" style="color:#f59038">Break</button>
+        <button class="tb-btn" title="Insert link (Ctrl+K)" onclick="insertLink()">Link</button>
+        <button class="tb-btn" title="Insert image" onclick="insertImage()">Image</button>
+        <div class="tb-sep-v"></div>
+        <button class="tb-btn" title="Snippets" id="insertBtn" onclick="toggleInsertMenu(event)">Insert ▾</button>
+        <div style="flex:1"></div>
+        <span class="tb-pdf-lbl">PDF PREVIEW →</span>
+      </div>
+
+      <!-- TABS -->
+      <div class="ed-tabs" id="edTabs"></div>
+
+      <!-- CODEMIRROR -->
+      <div class="cm-wrap" id="cmWrap">
+        <textarea id="cmEditor" placeholder="Start writing your Markdown report..."></textarea>
+
+        <!-- OVERLEAF-STYLE SEARCH/REPLACE PANEL -->
+        <div class="search-panel" id="searchPanel">
+          <!-- FIND ROW -->
+          <div class="sp-row">
+            <input class="sp-input" id="spInput" placeholder="Find..." autocomplete="off"
+              oninput="spSearch()" onkeydown="spKeyDown(event)"/>
+            <span class="sp-count" id="spCount">—</span>
+            <button class="sp-nav-btn" id="spPrev" onclick="spNav(-1)" disabled title="Previous match (Shift+Enter)">
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+            </button>
+            <button class="sp-nav-btn" id="spNext" onclick="spNav(1)" disabled title="Next match (Enter)">
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="sp-opts">
+              <button class="sp-opt" id="spCasBtn" onclick="spToggleOpt('case')" title="Case sensitive">Aa</button>
+              <button class="sp-opt" id="spRegBtn" onclick="spToggleOpt('regex')" title="Regex">.*</button>
+              <button class="sp-opt" id="spWordBtn" onclick="spToggleOpt('word')" title="Whole word">W</button>
+            </div>
+            <button class="sp-close" onclick="spClose()" title="Close (Esc)">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <!-- REPLACE ROW (shown when opened via Ctrl+H) -->
+          <div class="sp-replace-row" id="spReplaceRow" style="display:none">
+            <input class="sp-input" id="spReplaceInput" placeholder="Replace with..." autocomplete="off"
+              onkeydown="spReplaceKeyDown(event)"/>
+            <button class="sp-replace-btn" onclick="spReplaceOne()" title="Replace current (Enter)">Replace</button>
+            <button class="sp-replace-btn all" onclick="spReplaceAll()" title="Replace all">All</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- FILE VIEWER (images, binary PDFs) -->
+      <div class="f-viewer hidden" id="fViewer">
+        <div style="font-family:Consolas,monospace;font-size:10px;color:#555;margin-bottom:12px" id="vLbl"></div>
+        <img id="vImg" style="display:none;max-width:100%;border-radius:6px;border:1px solid #2a2a2a"/>
+        <div style="font-family:Consolas,monospace;font-size:11px;color:#555" id="vMsg"></div>
+      </div>
+    </div>
+
+    <!-- RESIZER 2 -->
+    <div class="res" id="res2"></div>
+
+    <!-- PDF PANEL -->
+    <div class="pdf-panel" id="pdfPanel">
+      <div class="panel-header">
+        <span class="ph-title" id="pdfTit">PDF Preview</span>
+        <div class="pdf-nav" id="pdfNav" style="display:none">
+          <button class="pdf-nav-btn" id="pdfPrevBtn" onclick="goPage(-1)" disabled title="Previous page">
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <div class="pdf-page-indicator">
+            <input class="pdf-page-input" id="pdfPageInput" type="number" min="1" value="1"
+              onchange="jumpToPage(this.value)" onkeydown="if(event.key==='Enter')jumpToPage(this.value)"/>
+            <span id="pdfTotalLbl">/ 1</span>
+          </div>
+          <button class="pdf-nav-btn" id="pdfNextBtn" onclick="goPage(1)" disabled title="Next page">
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+        <div class="zoom-bar">
+          <button class="zoom-btn" onclick="zoomPdf(-.15)" title="Zoom out"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+          <span class="z-label" id="zLbl">100%</span>
+          <button class="zoom-btn" onclick="zoomPdf(.15)" title="Zoom in"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+          <button class="zoom-btn" onclick="zoomPdf(0,'fit')" title="Fit width"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/></svg></button>
+        </div>
+        <button class="ph-btn" onclick="clearLog()" title="Clear log">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+        </button>
+      </div>
+      <div class="pdf-body" id="pdfBody">
+        <div class="pdf-empty" id="pdfEmpty">
+          <div class="pdf-empty-ico">📄</div>
+          <div>Compile to preview PDF</div>
+          <div style="margin-top:6px;font-size:9px;opacity:.5">Ctrl+Enter to compile</div>
+        </div>
+      </div>
+      <div class="log-wrap collapsed" id="logWrap">
+        <div class="log-header" onclick="toggleLog()">
+          <span class="log-title">Compile Log</span>
+          <span class="log-stat" id="compStat"></span>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" id="logArrow"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <pre class="log-body" id="logBody">Compilation log will appear here...</pre>
+      </div>
+    </div>
+
+    <!-- RESIZER 3 -->
+    <div class="res" id="res3"></div>
+
+    <!-- CHAT PANEL -->
+    <div class="chat-panel" id="chatPanel">
+      <div class="panel-header">
+        <span class="ph-title">Chat</span>
+        <button class="ph-btn" onclick="toggleChat()" title="Close chat">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="chat-msgs" id="chatMsgs"></div>
+      <div class="chat-input-wrap">
+        <textarea class="chat-input" id="chatIn" placeholder="Message..." rows="2" onkeydown="chatKD(event)"></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CONTEXT MENU -->
+<div class="ctx-menu" id="ctxMenu"></div>
+
+<!-- LANGUAGE PICKER -->
+<div class="popup" id="langPopup">
+  <div style="padding:3px 10px 6px;font-family:Consolas,monospace;font-size:8.5px;color:#555;letter-spacing:1.5px;text-transform:uppercase">Language</div>
+  <div class="psep"></div>
+  <div class="pi" onclick="insertCodeBlock('bash');closeLangPicker()"><div class="pi-ico">🐚</div>bash<span class="pi-badge">shell</span></div>
+  <div class="pi" onclick="insertCodeBlock('python');closeLangPicker()"><div class="pi-ico">🐍</div>python<span class="pi-badge">py</span></div>
+  <div class="pi" onclick="insertCodeBlock('javascript');closeLangPicker()"><div class="pi-ico">⚡</div>javascript<span class="pi-badge">js</span></div>
+  <div class="pi" onclick="insertCodeBlock('typescript');closeLangPicker()"><div class="pi-ico">🔷</div>typescript<span class="pi-badge">ts</span></div>
+  <div class="pi" onclick="insertCodeBlock('rust');closeLangPicker()"><div class="pi-ico">🦀</div>rust<span class="pi-badge">rs</span></div>
+  <div class="pi" onclick="insertCodeBlock('go');closeLangPicker()"><div class="pi-ico">🔵</div>go<span class="pi-badge">go</span></div>
+  <div class="pi" onclick="insertCodeBlock('c');closeLangPicker()"><div class="pi-ico">🔩</div>c / c++<span class="pi-badge">c</span></div>
+  <div class="pi" onclick="insertCodeBlock('sql');closeLangPicker()"><div class="pi-ico">🗃️</div>sql<span class="pi-badge">sql</span></div>
+  <div class="pi" onclick="insertCodeBlock('powershell');closeLangPicker()"><div class="pi-ico">💙</div>powershell<span class="pi-badge">ps1</span></div>
+  <div class="pi" onclick="insertCodeBlock('text');closeLangPicker()"><div class="pi-ico">📄</div>plain text<span class="pi-badge">txt</span></div>
+</div>
+
+<!-- TABLE PICKER -->
+<div class="table-popup" id="tablePopup">
+  <div class="tbl-size" id="tblSizeLabel">Select table size</div>
+  <div class="tbl-grid" id="tblGrid"></div>
+</div>
+
+<!-- COLOR PICKER -->
+<div class="color-popup" id="colorPopup">
+  <div class="color-popup-title">Text color — \textcolor</div>
+  <div class="color-swatches" id="colorSwatches"></div>
+  <div class="color-none" onclick="applyColor(null)">
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    Remove color
+  </div>
+</div>
+
+<!-- INSERT POPUP -->
+<div class="insert-popup" id="insertPopup">
+  <div class="pi" onclick="closeInsertMenu();insertSnippet('toc')"><div class="pi-ico">📋</div>Table of Contents</div>
+  <div class="pi" onclick="closeInsertMenu();insertSnippet('pagebreak')"><div class="pi-ico">📄</div>Page Break</div>
+  <div class="pi" onclick="closeInsertMenu();insertSnippet('footnote')"><div class="pi-ico">†</div>Footnote</div>
+  <div class="psep"></div>
+  <div class="pi" onclick="closeInsertMenu();insertSnippet('warning')"><div class="pi-ico">⚠️</div>Warning callout</div>
+  <div class="pi" onclick="closeInsertMenu();insertSnippet('info')"><div class="pi-ico">ℹ️</div>Info callout</div>
+  <div class="pi" onclick="closeInsertMenu();insertSnippet('finding')"><div class="pi-ico">🔴</div>Finding (OSCP)</div>
+  <div class="psep"></div>
+  <div class="pi" onclick="closeInsertMenu();insertSnippet('nmap')"><div class="pi-ico">🔍</div>Nmap output</div>
+  <div class="pi" onclick="closeInsertMenu();insertSnippet('credentials')"><div class="pi-ico">🔑</div>Credentials table</div>
+</div>
+
+<!-- KEYMAP PANEL -->
+<div class="keymap-panel" id="keymapPanel">
+  <div class="km-title">
+    Keyboard Shortcuts
+    <div class="km-close" onclick="closeKeymap()">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </div>
+  </div>
+  <div class="km-section">
+    <div class="km-section-title">File</div>
+    <div class="km-row"><span class="km-desc">Save</span><div class="km-keys"><span class="km-key">Ctrl</span><span class="km-key">S</span></div></div>
+    <div class="km-row"><span class="km-desc">Compile PDF</span><div class="km-keys"><span class="km-key">Ctrl</span><span class="km-key">Enter</span></div></div>
+  </div>
+  <div class="km-section">
+    <div class="km-section-title">Format</div>
+    <div class="km-row"><span class="km-desc">Bold</span><div class="km-keys"><span class="km-key">Ctrl</span><span class="km-key">B</span></div></div>
+    <div class="km-row"><span class="km-desc">Italic</span><div class="km-keys"><span class="km-key">Ctrl</span><span class="km-key">I</span></div></div>
+    <div class="km-row"><span class="km-desc">Strikethrough</span><div class="km-keys"><span class="km-key">Ctrl</span><span class="km-key">D</span></div></div>
+    <div class="km-row"><span class="km-desc">Inline code</span><div class="km-keys"><span class="km-key">Ctrl</span><span class="km-key">`</span></div></div>
+    <div class="km-row"><span class="km-desc">Link</span><div class="km-keys"><span class="km-key">Ctrl</span><span class="km-key">K</span></div></div>
+    <div class="km-row"><span class="km-desc">H1 / H2 / H3</span><div class="km-keys"><span class="km-key">Ctrl</span><span class="km-key">1-3</span></div></div>
+    <div class="km-row"><span class="km-desc">Bullet list</span><div class="km-keys"><span class="km-key">Ctrl</span><span class="km-key">⇧</span><span class="km-key">8</span></div></div>
+    <div class="km-row"><span class="km-desc">Blockquote</span><div class="km-keys"><span class="km-key">Ctrl</span><span class="km-key">⇧</span><span class="km-key">.</span></div></div>
+    <div class="km-row"><span class="km-desc">Page break</span><div class="km-keys"><span class="km-key">Ctrl</span><span class="km-key">⇧</span><span class="km-key">P</span></div></div>
+  </div>
+  <div class="km-section">
+    <div class="km-section-title">Search</div>
+    <div class="km-row"><span class="km-desc">Find (live)</span><div class="km-keys"><span class="km-key">Ctrl</span><span class="km-key">F</span></div></div>
+    <div class="km-row"><span class="km-desc">Find &amp; Replace</span><div class="km-keys"><span class="km-key">Ctrl</span><span class="km-key">H</span></div></div>
+    <div class="km-row"><span class="km-desc">Next match</span><div class="km-keys"><span class="km-key">Enter</span></div></div>
+    <div class="km-row"><span class="km-desc">Prev match</span><div class="km-keys"><span class="km-key">⇧</span><span class="km-key">Enter</span></div></div>
+    <div class="km-row"><span class="km-desc">Close search</span><div class="km-keys"><span class="km-key">Esc</span></div></div>
+  </div>
+  <div class="km-section">
+    <div class="km-section-title">View</div>
+    <div class="km-row"><span class="km-desc">Shortcuts panel</span><div class="km-keys"><span class="km-key">?</span></div></div>
+    <div class="km-row"><span class="km-desc">Toggle chat</span><div class="km-keys"><span class="km-key">Ctrl</span><span class="km-key">⇧</span><span class="km-key">C</span></div></div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="modal-ov" id="mNewFile">
+  <div class="modal">
+    <div class="m-title">New File</div><div class="m-sub">create a new file in this project</div>
+    <div class="fg"><label class="flbl">Filename</label><input class="finput" id="mFName" placeholder="e.g. findings.md" onkeydown="if(event.key==='Enter')doNewFile()"/></div>
+    <div class="m-acts"><button class="btn btn-ghost" onclick="closeM('mNewFile')">Cancel</button><button class="btn btn-primary" onclick="doNewFile()">Create</button></div>
+  </div>
+</div>
+<div class="modal-ov" id="mNewFolder">
+  <div class="modal">
+    <div class="m-title">New Folder</div><div class="m-sub">create a new directory</div>
+    <div class="fg"><label class="flbl">Folder Name</label><input class="finput" id="mFolderName" placeholder="e.g. screenshots" onkeydown="if(event.key==='Enter')doNewFolder()"/></div>
+    <div class="m-acts"><button class="btn btn-ghost" onclick="closeM('mNewFolder')">Cancel</button><button class="btn btn-primary" onclick="doNewFolder()">Create</button></div>
+  </div>
+</div>
+<div class="modal-ov" id="mRename">
+  <div class="modal">
+    <div class="m-title">Rename</div><div class="m-sub">enter a new name</div>
+    <div class="fg"><label class="flbl">New Name</label><input class="finput" id="mRenameVal" onkeydown="if(event.key==='Enter')doRename()"/></div>
+    <div class="m-acts"><button class="btn btn-ghost" onclick="closeM('mRename')">Cancel</button><button class="btn btn-primary" onclick="doRename()">Rename</button></div>
+  </div>
+</div>
+<div class="modal-ov" id="mLink">
+  <div class="modal">
+    <div class="m-title">Insert Link</div><div class="m-sub">markdown hyperlink</div>
+    <div class="fg"><label class="flbl">Display Text</label><input class="finput" id="mLinkText" placeholder="Link text"/></div>
+    <div class="fg"><label class="flbl">URL</label><input class="finput" id="mLinkUrl" placeholder="https://..." onkeydown="if(event.key==='Enter')doInsertLink()"/></div>
+    <div class="m-acts"><button class="btn btn-ghost" onclick="closeM('mLink')">Cancel</button><button class="btn btn-primary" onclick="doInsertLink()">Insert</button></div>
+  </div>
+</div>
+<div class="modal-ov" id="mImage">
+  <div class="modal">
+    <div class="m-title">Insert Image</div><div class="m-sub">embed an image in your document</div>
+    <div class="fg"><label class="flbl">Alt Text</label><input class="finput" id="mImgAlt" placeholder="Screenshot"/></div>
+    <div class="fg"><label class="flbl">Path (relative)</label><input class="finput" id="mImgPath" placeholder="img/screenshot.png" onkeydown="if(event.key==='Enter')doInsertImage()"/></div>
+    <div class="m-acts"><button class="btn btn-ghost" onclick="closeM('mImage')">Cancel</button><button class="btn btn-primary" onclick="doInsertImage()">Insert</button></div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+const params=new URLSearchParams(location.search);
+const PID=params.get('id');
+const nick=params.get('nick')||localStorage.getItem('repdown_nickname')||'Anonymous';
+if(!PID)location.href='/';
+
+// ── CODEMIRROR ──
+const cm=CodeMirror.fromTextArea(document.getElementById('cmEditor'),{
+  mode:'markdown',theme:'default',lineNumbers:true,lineWrapping:true,
+  extraKeys:{
+    'Ctrl-Enter':()=>compile(),
+    'Ctrl-S':()=>doSave(),
+    'Ctrl-B':()=>wrapSel('**','**'),
+    'Ctrl-I':()=>wrapSel('*','*'),
+    'Ctrl-D':()=>wrapSel('~~','~~'),
+    'Ctrl-`':()=>wrapSel('`','`'),
+    'Ctrl-K':()=>insertLink(),
+    'Ctrl-1':()=>insertHeading(1),
+    'Ctrl-2':()=>insertHeading(2),
+    'Ctrl-3':()=>insertHeading(3),
+    'Ctrl-Shift-8':()=>insertList('bullet'),
+    'Ctrl-Shift-.':()=>insertBlockquote(),
+    'Ctrl-Shift-P':()=>insertPageBreak(),
+    'Ctrl-Shift-C':()=>toggleChat(),
+    'Esc':()=>{if(document.getElementById('searchPanel').classList.contains('open'))spClose();},
+    'Ctrl-F':(c)=>{e_openSearch(false);return false;},
+    'Ctrl-H':(c)=>{e_openSearch(true);return false;},
+    'Enter':'newlineAndIndentContinueMarkdownList',
+  },
+  placeholder:'Start writing your Markdown report...',
+});
+const cmWrap=document.getElementById('cmWrap');
+
+document.addEventListener('keydown',e=>{
+  if(document.activeElement===document.body&&e.key==='?')toggleKeymap();
+  if((e.ctrlKey||e.metaKey)&&!e.shiftKey&&e.key==='s'){e.preventDefault();doSave();}
+  if((e.ctrlKey||e.metaKey)&&e.key==='f'){e.preventDefault();e_openSearch(false);}
+  if((e.ctrlKey||e.metaKey)&&e.key==='h'){e.preventDefault();e_openSearch(true);}
+  if(e.key==='Escape'){spClose();}
+});
+
+let tabs=[],activeFile=null,suppr=false,saveTO=null;
+let expanded={},uploadDest='';
+let remoteCursors={},remotePos={};
+let pdfZoom=1.0,pdfDoc=null,pdfPage=1;
+let chatCollapsed=false,logExpanded=false;
+let newFilePar='',renamePath='';
+let currentColor=null;
+
+// ── SOCKET ──
+const socket=io();
+let connUsers=[];
+socket.on('connect',()=>socket.emit('join-project',{projectId:PID,nickname:nick}));
+socket.on('users-update',u=>{connUsers=u;renderUsers();document.getElementById('onlineCnt').textContent=u.length+' online';});
+socket.on('user-joined',({nickname:n})=>sysMsg(`${n} joined`));
+socket.on('user-left',({nickname:n})=>{
+  sysMsg(`${n} left`);
+  for(const[sid,r]of Object.entries(remotePos)){if(r.nickname===n){clearRC(sid);delete remotePos[sid];}}
+});
+socket.on('text-change',({filePath,content,socketId})=>{
+  if(filePath===activeFile&&socketId!==socket.id){
+    suppr=true;const cur=cm.getCursor(),sc=cm.getScrollInfo();
+    cm.setValue(content);cm.setCursor(cur);cm.scrollTo(sc.left,sc.top);suppr=false;
+    const t=tabs.find(x=>x.path===filePath);if(t)t.content=content;
+  }
+});
+socket.on('cursor-update',({socketId,cursor,filePath,user})=>{
+  if(!user||socketId===socket.id)return;
+  remotePos[socketId]={...user,cursor,filePath};
+  if(filePath===activeFile)drawRC(socketId,cursor,user);else clearRC(socketId);
+});
+socket.on('chat-history',h=>h.forEach(appendChat));
+socket.on('chat-message',msg=>{
+  appendChat(msg);
+  if(chatCollapsed)document.getElementById('chatBadge').classList.add('show');
+});
+socket.on('tree-changed',()=>loadTree());
+cm.on('cursorActivity',()=>{
+  socket.emit('cursor-update',{projectId:PID,cursor:cm.getCursor(),filePath:activeFile});
+});
+
+function renderUsers(){
+  document.getElementById('usersBar').innerHTML=connUsers.map(u=>`
+    <div class="user-btn"
+      style="color:${u.color};border-color:${u.color}44;background:${u.color}14"
+      title="${u.nickname}"
+      onclick="${u.nickname===nick?'':` jumpToCursor('${esc(u.socketId||'')}') `}"
+    >
+      <div class="u-pip"></div>${H(u.nickname)}
+    </div>`).join('');
+}
+
+function jumpToCursor(socketId){
+  if(!socketId)return;
+  const r=remotePos[socketId];
+  if(r&&r.cursor){
+    if(r.filePath&&r.filePath!==activeFile)openFile(r.filePath);
+    setTimeout(()=>{
+      cm.setCursor(r.cursor);
+      cm.scrollIntoView({line:r.cursor.line,ch:r.cursor.ch},{block:'center'});
+      cm.focus();
+    },r.filePath!==activeFile?200:0);
+    toast(`Jumped to ${r.nickname}'s cursor`);
+  }else{toast(`No cursor data`,'err');}
+}
+
+function drawRC(sid,cursor,user){
+  clearRC(sid);if(!cursor)return;
+  if(cursor.line>=cm.lineCount())return;
+  const wrap=document.createElement('div');wrap.className='rc-cursor';
+  const line=document.createElement('div');line.className='rc-line';line.style.background=user.color;wrap.appendChild(line);
+  const lbl=document.createElement('div');lbl.className='rc-label';lbl.style.background=user.color;lbl.textContent=user.nickname;wrap.appendChild(lbl);
+  const bm=cm.setBookmark(CodeMirror.Pos(cursor.line,cursor.ch),{widget:wrap,insertLeft:true});
+  remoteCursors[sid]={bm};
+}
+function clearRC(sid){if(remoteCursors[sid]){remoteCursors[sid].bm.clear();delete remoteCursors[sid];}}
+function clearAllRC(){Object.keys(remoteCursors).forEach(clearRC);}
+
+// ══════════════════════════════════════════════════════════════
+// OVERLEAF-STYLE SEARCH / REPLACE ENGINE
+// ══════════════════════════════════════════════════════════════
+let spMatches=[],spCurrent=-1,spOpts={case:false,regex:false,word:false},spOverlay=null;
+
+function e_openSearch(withReplace){
+  const panel=document.getElementById('searchPanel');
+  const sel=cm.getSelection();
+  panel.classList.add('open');
+  document.getElementById('spReplaceRow').style.display=withReplace?'flex':'none';
+  const inp=document.getElementById('spInput');
+  if(sel&&sel.length<120)inp.value=sel;
+  inp.focus();inp.select();
+  if(inp.value)spSearch();
+}
+
+function spClose(){
+  document.getElementById('searchPanel').classList.remove('open');
+  spClearOverlay();
+  spMatches=[];spCurrent=-1;
+  document.getElementById('spCount').textContent='—';
+  document.getElementById('spCount').className='sp-count';
+  document.getElementById('spInput').className='sp-input';
+  document.getElementById('spPrev').disabled=true;
+  document.getElementById('spNext').disabled=true;
+  cm.focus();
+}
+
+function spToggleOpt(key){
+  spOpts[key]=!spOpts[key];
+  document.getElementById({case:'spCasBtn',regex:'spRegBtn',word:'spWordBtn'}[key]).classList.toggle('on',spOpts[key]);
+  spSearch();
+}
+
+function spSearch(){
+  spClearOverlay();
+  const q=document.getElementById('spInput').value;
+  const inp=document.getElementById('spInput');
+  const cnt=document.getElementById('spCount');
+  if(!q){inp.className='sp-input';cnt.textContent='—';cnt.className='sp-count';spMatches=[];spCurrent=-1;document.getElementById('spPrev').disabled=true;document.getElementById('spNext').disabled=true;return;}
+
+  // Build regex
+  let pattern=q;
+  if(!spOpts.regex)pattern=q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  if(spOpts.word)pattern=`\\b${pattern}\\b`;
+  let flags='g';if(!spOpts.case)flags+='i';
+  let rx;try{rx=new RegExp(pattern,flags);}catch{inp.className='sp-input no-match';cnt.textContent='!rx';return;}
+
+  // Find all matches in document
+  const text=cm.getValue();
+  spMatches=[];
+  let m;
+  while((m=rx.exec(text))!==null){
+    spMatches.push(m.index);
+    if(rx.lastIndex===m.index)rx.lastIndex++;
+  }
+
+  if(spMatches.length===0){
+    inp.className='sp-input no-match';
+    cnt.textContent='no match';cnt.className='sp-count';
+    document.getElementById('spPrev').disabled=true;
+    document.getElementById('spNext').disabled=true;
+    return;
+  }
+
+  inp.className='sp-input';
+  cnt.className='sp-count has-match';
+  document.getElementById('spPrev').disabled=false;
+  document.getElementById('spNext').disabled=false;
+
+  // Apply highlight overlay
+  spOverlay={token:function(stream){
+    const pos=stream.pos+stream.string.split('\n').slice(0,stream.lineNo).join('\n').length;
+    if(rx.test(stream.string.slice(stream.pos))){
+      const localM=rx.exec(stream.string.slice(stream.pos));
+      if(localM&&localM.index===0){stream.pos+=Math.max(1,localM[0].length);return'searching';}
+    }
+    stream.next();return null;
+  }};
+
+  // Use CodeMirror overlay for highlights
+  cm.addOverlay({token:function(stream){
+    let sub=stream.string.slice(stream.pos);
+    rx.lastIndex=0;
+    const lm=rx.exec(sub);
+    if(lm&&lm.index===0){stream.pos+=Math.max(1,lm[0].length);return'searching';}
+    if(lm){stream.pos+=lm.index;return null;}
+    stream.skipToEnd();return null;
+  }},{opaque:false,priority:10});
+
+  // Jump to first match near cursor
+  const curOff=spPosToOffset(cm.getCursor());
+  let best=0;
+  for(let i=0;i<spMatches.length;i++){if(spMatches[i]>=curOff){best=i;break;if(i===spMatches.length-1)best=0;}}
+  spCurrent=best;
+  spJump();
+}
+
+function spClearOverlay(){
+  try{cm.removeOverlay(spOverlay||{});}catch{}
+  // remove all overlays by clearing (CodeMirror doesn't expose removeAll but does by token reference)
+  // We just remove whatever was last added
+  spOverlay=null;
+}
+
+function spPosToOffset(pos){
+  const lines=cm.getValue().split('\n');
+  let off=0;
+  for(let i=0;i<pos.line;i++)off+=lines[i].length+1;
+  return off+pos.ch;
+}
+function spOffsetToPos(offset){
+  const lines=cm.getValue().split('\n');
+  let off=0;
+  for(let i=0;i<lines.length;i++){
+    if(off+lines[i].length>=offset)return{line:i,ch:offset-off};
+    off+=lines[i].length+1;
+  }
+  return{line:0,ch:0};
+}
+
+function spNav(dir){
+  if(!spMatches.length)return;
+  spCurrent=(spCurrent+dir+spMatches.length)%spMatches.length;
+  spJump();
+}
+
+function spJump(){
+  if(spCurrent<0||spCurrent>=spMatches.length)return;
+  const q=document.getElementById('spInput').value;
+  let pattern=q;if(!spOpts.regex)pattern=q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  if(spOpts.word)pattern=`\\b${pattern}\\b`;
+  let flags='';if(!spOpts.case)flags+='i';
+  let rx;try{rx=new RegExp(pattern,flags);}catch{return;}
+  const text=cm.getValue();
+  rx.lastIndex=spMatches[spCurrent];
+  const m=rx.exec(text.slice(spMatches[spCurrent]));
+  if(!m)return;
+  const from=spOffsetToPos(spMatches[spCurrent]);
+  const to=spOffsetToPos(spMatches[spCurrent]+m[0].length);
+  cm.setSelection(from,to);
+  cm.scrollIntoView({from,to},{block:'center'});
+  document.getElementById('spCount').textContent=`${spCurrent+1} / ${spMatches.length}`;
+}
+
+function spKeyDown(e){
+  if(e.key==='Enter'){e.preventDefault();if(e.shiftKey)spNav(-1);else spNav(1);}
+  if(e.key==='Escape'){e.preventDefault();spClose();}
+}
+function spReplaceKeyDown(e){
+  if(e.key==='Enter'){e.preventDefault();spReplaceOne();}
+  if(e.key==='Escape'){e.preventDefault();spClose();}
+}
+
+function spReplaceOne(){
+  if(!spMatches.length||spCurrent<0)return;
+  const repl=document.getElementById('spReplaceInput').value;
+  const q=document.getElementById('spInput').value;
+  let pattern=q;if(!spOpts.regex)pattern=q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  if(spOpts.word)pattern=`\\b${pattern}\\b`;
+  let flags='';if(!spOpts.case)flags+='i';
+  let rx;try{rx=new RegExp(pattern,flags);}catch{return;}
+  const text=cm.getValue();
+  rx.lastIndex=spMatches[spCurrent];
+  const m=rx.exec(text.slice(spMatches[spCurrent]));
+  if(!m)return;
+  const from=spOffsetToPos(spMatches[spCurrent]);
+  const to=spOffsetToPos(spMatches[spCurrent]+m[0].length);
+  const replStr=spOpts.regex?m[0].replace(rx,repl):repl;
+  cm.replaceRange(replStr,from,to);
+  setTimeout(()=>spSearch(),10);
+}
+
+function spReplaceAll(){
+  if(!spMatches.length)return;
+  const repl=document.getElementById('spReplaceInput').value;
+  const q=document.getElementById('spInput').value;
+  let pattern=q;if(!spOpts.regex)pattern=q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  if(spOpts.word)pattern=`\\b${pattern}\\b`;
+  let flags='g';if(!spOpts.case)flags+='i';
+  let rx;try{rx=new RegExp(pattern,flags);}catch{return;}
+  const n=spMatches.length;
+  cm.setValue(cm.getValue().replace(rx,repl));
+  toast(`${n} replacement${n!==1?'s':''} made`);
+  spSearch();
+}
+
+// ══════════════════════════════════════════════════════════════
+
+async function init(){
+  const r=await fetch(`/api/projects/${PID}`);
+  const m=await r.json();
+  document.title=`${m.name} — RepDown`;
+  document.getElementById('projName').textContent=m.name;
+  await loadTree();
+  initTablePicker();
+  initColorPicker();
+}
+
+function startProjRename(){
+  const el=document.getElementById('projName');
+  const cur=el.textContent;
+  const input=document.createElement('input');
+  input.className='proj-name-input';
+  input.value=cur;
+  el.replaceWith(input);
+  input.focus();input.select();
+  async function commit(){
+    const nv=input.value.trim()||cur;
+    try{await apiFetch(`/api/projects/${PID}`,{method:'PATCH',body:{name:nv}});document.title=`${nv} — RepDown`;}catch{}
+    const newEl=document.createElement('div');
+    newEl.className='proj-name';newEl.id='projName';newEl.title='Click to rename';
+    newEl.style.cursor='pointer';newEl.textContent=nv;
+    newEl.onclick=startProjRename;
+    input.replaceWith(newEl);
+    toast('Project renamed');
+  }
+  input.onblur=commit;
+  input.onkeydown=e=>{if(e.key==='Enter')input.blur();if(e.key==='Escape'){input.value=cur;input.blur();}};
+}
+
+async function loadTree(){
+  try{
+    const r=await fetch(`/api/files/${PID}/tree`);
+    const d=await r.json();
+    buildTree(d,document.getElementById('treeBody'),0);
+    if(!activeFile){const f=findMd(d);if(f)await openFile(f);}
+  }catch{}
+}
+function findMd(ns){
+  for(const n of ns){
+    if(n.type==='file'&&n.name==='report.md')return n.path;
+    if(n.type==='file'&&n.name.endsWith('.md'))return n.path;
+    if(n.type==='folder'&&n.children){const r=findMd(n.children);if(r)return r;}
+  }return null;
+}
+function buildTree(nodes,container,depth){
+  container.innerHTML='';
+  // Sort: folders first, then files — each group alphabetically
+  const sorted=[...nodes].sort((a,b)=>{
+    if(a.type===b.type)return a.name.localeCompare(b.name);
+    return a.type==='folder'?-1:1;
+  });
+  sorted.forEach(n=>{
+    const isDir=n.type==='folder',open=!!expanded[n.path];
+    const el=document.createElement('div');
+    el.className=`tnode${(!isDir&&n.path===activeFile)?' active':''}`;
+    el.dataset.path=n.path;el.dataset.type=n.type;
+    const ind=document.createElement('div');ind.className='n-indent';ind.style.width=(depth*10)+'px';
+    const arr=document.createElement('div');arr.className=`n-arrow ${isDir?(open?'open':''):'leaf'}`;
+    arr.innerHTML='<svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>';
+    const ico=document.createElement('div');ico.className='n-icon';ico.innerHTML=isDir?dIco(open):fIco(n.name);
+    const nm=document.createElement('div');nm.className='n-name';nm.textContent=n.name;
+    el.append(ind,arr,ico,nm);
+    el.onclick=e=>{e.stopPropagation();if(isDir){expanded[n.path]=!expanded[n.path];buildTree(sorted,container,depth);}else openFile(n.path);};
+    el.oncontextmenu=e=>{e.preventDefault();e.stopPropagation();showCtx(e.clientX,e.clientY,n);};
+    if(!isDir){el.draggable=true;el.ondragstart=e=>{e.dataTransfer.setData('text/plain',n.path);e.dataTransfer.effectAllowed='move';};}
+    if(isDir){
+      el.ondragover=e=>{e.preventDefault();e.stopPropagation();el.classList.add('drag-over');};
+      el.ondragleave=()=>el.classList.remove('drag-over');
+      el.ondrop=e=>{e.preventDefault();e.stopPropagation();el.classList.remove('drag-over');const src=e.dataTransfer.getData('text/plain');if(src)moveFile(src,n.path);else dropFiles(e,n.path);};
+    }
+    container.appendChild(el);
+    if(isDir&&open&&n.children?.length){const sub=document.createElement('div');buildTree(n.children,sub,depth+1);container.appendChild(sub);}
+  });
+}
+const fIco=n=>{
+  if(/\.md$/i.test(n))return`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3dd9d0" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
+  if(/\.(tex|bib)$/i.test(n))return`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#b96aff" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
+  if(/\.(png|jpg|jpeg|gif|svg|webp)$/i.test(n))return`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3de87a" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
+  if(/\.pdf$/i.test(n))return`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ff4f4f" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
+  return`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8a90ab" stroke-width="1.8"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>`;
+};
+const dIco=()=>`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#f5d030" stroke-width="1.8"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`;
+
+async function moveFile(src,dest){
+  const fname=src.split('/').pop();const np=dest?`${dest}/${fname}`:fname;if(np===src)return;
+  await apiFetch(`/api/files/${PID}/rename`,{method:'POST',body:{oldPath:src,newPath:np}});
+  const t=tabs.find(x=>x.path===src);if(t)t.path=np;if(activeFile===src)activeFile=np;
+  renderTabs();await loadTree();toast(`Moved → ${dest||'root'}`);socket.emit('refresh-tree',{projectId:PID});
+}
+
+const IMGS=['png','jpg','jpeg','gif','svg','webp'];
+async function openFile(path){
+  if(!path)return;
+  if(tabs.find(t=>t.path===path)){setTab(path);return;}
+  const ext=(path.split('.').pop()||'').toLowerCase();
+  const isImg=IMGS.includes(ext),isPdf=ext==='pdf';
+  if(isImg||isPdf){tabs.push({path,name:path.split('/').pop(),content:null,modified:false,vt:isImg?'img':'pdf'});setTab(path);return;}
+  try{
+    const r=await fetch(`/api/files/${PID}/read?path=${encodeURIComponent(path)}`);
+    const{content}=await r.json();
+    tabs.push({path,name:path.split('/').pop(),content:content||'',modified:false,vt:'text'});setTab(path);
+  }catch{toast('Cannot open file','err');}
+}
+function setTab(path){
+  activeFile=path;const t=tabs.find(x=>x.path===path);if(!t)return;
+  clearAllRC();renderTabs();
+  document.querySelectorAll('.tnode').forEach(el=>{if(el.dataset.type==='file')el.classList.toggle('active',el.dataset.path===path);});
+  const fv=document.getElementById('fViewer');
+  if(t.vt==='img'){
+    cmWrap.style.display='none';fv.classList.remove('hidden');
+    document.getElementById('vLbl').textContent=t.name;
+    document.getElementById('vImg').src=`/api/files/${PID}/serve?path=${encodeURIComponent(path)}&t=${Date.now()}`;
+    document.getElementById('vImg').style.display='block';document.getElementById('vMsg').style.display='none';
+  }else if(t.vt==='pdf'){
+    cmWrap.style.display='none';fv.classList.remove('hidden');
+    document.getElementById('vLbl').textContent=t.name;
+    document.getElementById('vImg').style.display='none';
+    document.getElementById('vMsg').textContent='Rendering…';document.getElementById('vMsg').style.display='block';
+    renderPDFUrl(`/api/files/${PID}/serve?path=${encodeURIComponent(path)}&t=${Date.now()}`);
+  }else{
+    fv.classList.add('hidden');cmWrap.style.display='';
+    suppr=true;cm.setValue(t.content||'');suppr=false;cm.refresh();
+    setTimeout(()=>cm.focus(),40);
+    for(const[sid,r]of Object.entries(remotePos)){if(r.filePath===path&&r.cursor)drawRC(sid,r.cursor,r);}
+  }
+}
+function renderTabs(){
+  document.getElementById('edTabs').innerHTML=tabs.map(t=>`
+    <div class="tab ${t.path===activeFile?'active':''}" onclick="setTab('${esc(t.path)}')">
+      ${t.modified?'<div class="tab-modified"></div>':''}${H(t.name)}
+      <span class="tab-close" onclick="event.stopPropagation();closeTab('${esc(t.path)}')">
+        <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </span>
+    </div>`).join('');
+}
+function closeTab(path){
+  tabs=tabs.filter(t=>t.path!==path);
+  if(activeFile===path){const n=tabs[tabs.length-1];if(n)setTab(n.path);else{activeFile=null;renderTabs();cm.setValue('');}}
+  else renderTabs();
+}
+
+cm.on('change',(c,ch)=>{
+  if(ch.origin==='+input'||ch.origin==='paste'){
+    const t=tabs.find(x=>x.path===activeFile);if(t&&t.vt==='text'){t.content=c.getValue();t.modified=true;}
+    renderTabs();
+    document.getElementById('sdot').className='s-dot saving';
+    document.getElementById('sstat').textContent='Saving...';
+    if(saveTO)clearTimeout(saveTO);saveTO=setTimeout(doSave,1200);
+    if(!suppr)socket.emit('text-change',{projectId:PID,filePath:activeFile,content:c.getValue()});
+  }
+});
+async function doSave(){
+  if(!activeFile)return;const t=tabs.find(x=>x.path===activeFile);if(!t||t.vt!=='text')return;
+  try{
+    await apiFetch(`/api/files/${PID}/write`,{method:'POST',body:{path:activeFile,content:t.content}});
+    t.modified=false;renderTabs();
+    document.getElementById('sdot').className='s-dot saved';
+    document.getElementById('sstat').textContent='Saved';
+  }catch{document.getElementById('sstat').textContent='Save failed';}
+}
+
+async function compile(){
+  const btn=document.getElementById('compBtn');btn.classList.add('loading');
+  btn.innerHTML=`<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin .8s linear infinite"><path d="M21 12a9 9 0 0 1-9 9M3 12a9 9 0 0 1 9-9"/></svg> Compiling...`;
+  await doSave();
+  const eng=document.getElementById('engSel').value;
+  const lb=document.getElementById('logBody');
+  lb.textContent=`Running pandoc --pdf-engine=${eng}...`;lb.className='log-body';
+  const pdfBodyEl=document.getElementById('pdfBody');
+  const prevST=pdfBodyEl.scrollTop,prevSL=pdfBodyEl.scrollLeft;
+  if(!logExpanded)toggleLog();
+  try{
+    const res=await apiFetch(`/api/compile/${PID}`,{method:'POST',body:{engine:eng,mainFile:activeFile||'report.md'}});
+    lb.textContent=res.log||'No output';lb.scrollTop=lb.scrollHeight;
+    if(res.success){
+      lb.className='log-body ok';
+      document.getElementById('compStat').className='log-stat ok';
+      document.getElementById('compStat').textContent='✓ Success';
+      toast('Compiled successfully!');
+      await renderPDF();
+      setTimeout(()=>{pdfBodyEl.scrollTop=prevST;pdfBodyEl.scrollLeft=prevSL;},150);
+    }else{
+      lb.className='log-body err';
+      document.getElementById('compStat').className='log-stat err';
+      document.getElementById('compStat').textContent='✗ Failed';
+      toast('Compilation failed','err');
+    }
+  }catch(e){lb.textContent='Error: '+e.message;toast('Compile error','err');}
+  btn.classList.remove('loading');
+  btn.innerHTML='<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>Compile';
+}
+
+async function renderPDF(){await renderPDFUrl(`/api/compile/${PID}/pdf?t=${Date.now()}`);}
+async function renderPDFUrl(url){
+  try{
+    pdfDoc=await pdfjsLib.getDocument({url,cMapUrl:'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/cmaps/',cMapPacked:true}).promise;
+    document.getElementById('pdfEmpty').style.display='none';
+    pdfPage=1;showPDFNav();updateNavBtns();
+    await renderAllPages();
+  }catch(e){console.error('PDF render:',e);}
+}
+async function renderAllPages(){
+  if(!pdfDoc)return;
+  const body=document.getElementById('pdfBody');
+  body.querySelectorAll('.pdf-page-wrap').forEach(el=>el.remove());
+  const panelW=Math.max(200,document.getElementById('pdfPanel').offsetWidth-28);
+  const dr=window.devicePixelRatio||1;
+  for(let p=1;p<=pdfDoc.numPages;p++){
+    const page=await pdfDoc.getPage(p);
+    const baseVP=page.getViewport({scale:1});
+    const fitScale=(panelW/baseVP.width)*pdfZoom;
+    const rs=fitScale*dr;
+    const vp=page.getViewport({scale:rs});
+    const wrap=document.createElement('div');wrap.className='pdf-page-wrap';wrap.dataset.page=p;
+    const lbl=document.createElement('div');lbl.className='pdf-page-num';lbl.textContent=`Page ${p}`;wrap.appendChild(lbl);
+    const canvas=document.createElement('canvas');canvas.className='pdf-canvas';
+    canvas.width=vp.width;canvas.height=vp.height;
+    canvas.style.width=(vp.width/dr)+'px';canvas.style.height=(vp.height/dr)+'px';
+    wrap.appendChild(canvas);body.appendChild(wrap);
+    const ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+    await page.render({canvasContext:ctx,viewport:vp}).promise;
+  }
+}
+function showPDFNav(){document.getElementById('pdfNav').style.display=pdfDoc&&pdfDoc.numPages>0?'flex':'none';updateNavBtns();}
+function updateNavBtns(){
+  if(!pdfDoc)return;
+  document.getElementById('pdfPrevBtn').disabled=pdfPage<=1;
+  document.getElementById('pdfNextBtn').disabled=pdfPage>=pdfDoc.numPages;
+  document.getElementById('pdfPageInput').value=pdfPage;
+  document.getElementById('pdfTotalLbl').textContent=`/ ${pdfDoc.numPages}`;
+}
+function goPage(delta){if(!pdfDoc)return;pdfPage=Math.max(1,Math.min(pdfDoc.numPages,pdfPage+delta));updateNavBtns();const wrap=document.querySelector(`.pdf-page-wrap[data-page="${pdfPage}"]`);if(wrap)wrap.scrollIntoView({behavior:'smooth',block:'start'});}
+function jumpToPage(val){if(!pdfDoc)return;pdfPage=Math.max(1,Math.min(pdfDoc.numPages,parseInt(val)||1));updateNavBtns();const wrap=document.querySelector(`.pdf-page-wrap[data-page="${pdfPage}"]`);if(wrap)wrap.scrollIntoView({behavior:'smooth',block:'start'});}
+document.getElementById('pdfBody').addEventListener('scroll',()=>{
+  if(!pdfDoc)return;const body=document.getElementById('pdfBody');const bodyRect=body.getBoundingClientRect();let found=1;
+  body.querySelectorAll('.pdf-page-wrap').forEach(w=>{if(w.getBoundingClientRect().top<=bodyRect.top+60)found=parseInt(w.dataset.page)||found;});
+  if(found!==pdfPage){pdfPage=found;updateNavBtns();}
+});
+function zoomPdf(d,mode){
+  if(mode==='fit')pdfZoom=1.0;else pdfZoom=Math.max(.25,Math.min(4,pdfZoom+d));
+  document.getElementById('zLbl').textContent=Math.round(pdfZoom*100)+'%';
+  if(pdfDoc)renderAllPages();
+}
+function toggleLog(){logExpanded=!logExpanded;document.getElementById('logWrap').className='log-wrap '+(logExpanded?'expanded':'collapsed');document.getElementById('logArrow').style.transform=logExpanded?'rotate(180deg)':'';}
+function clearLog(){document.getElementById('logBody').textContent='Compilation log will appear here...';document.getElementById('logBody').className='log-body';document.getElementById('compStat').textContent='';}
+
+function wrapSel(before,after){
+  const sel=cm.getSelection();
+  if(sel){cm.replaceSelection(before+sel+after);}
+  else{const cur=cm.getCursor();cm.replaceRange(before+'text'+after,cur);cm.setSelection(CodeMirror.Pos(cur.line,cur.ch+before.length),CodeMirror.Pos(cur.line,cur.ch+before.length+4));}
+  cm.focus();
+}
+function insertHeading(level){const hashes='#'.repeat(level)+' ';const cur=cm.getCursor();const line=cm.getLine(cur.line)||'';const clean=line.replace(/^#+\s*/,'');cm.replaceRange(hashes+clean,CodeMirror.Pos(cur.line,0),CodeMirror.Pos(cur.line,line.length));cm.focus();}
+function insertList(type){
+  const sel=cm.getSelection();
+  if(sel){const lines=sel.split('\n');cm.replaceSelection(lines.map((l,i)=>type==='bullet'?`- ${l}`:`${i+1}. ${l}`).join('\n'));}
+  else{const cur=cm.getCursor();const prefix=type==='bullet'?'- ':'1. ';cm.replaceRange('\n'+prefix,CodeMirror.Pos(cur.line,cm.getLine(cur.line).length));cm.setCursor(CodeMirror.Pos(cur.line+1,prefix.length));}
+  cm.focus();
+}
+function insertBlockquote(){
+  const sel=cm.getSelection();
+  if(sel)cm.replaceSelection(sel.split('\n').map(l=>'> '+l).join('\n'));
+  else{const cur=cm.getCursor();cm.replaceRange('\n> ',CodeMirror.Pos(cur.line,cm.getLine(cur.line).length));cm.setCursor(CodeMirror.Pos(cur.line+1,2));}
+  cm.focus();
+}
+function insertCodeBlock(lang){
+  lang=lang||'bash';
+  const sel=cm.getSelection();
+  const snippet=sel?'```'+lang+'\n'+sel+'\n```':'```'+lang+'\n\n```';
+  const cur=cm.getCursor();
+  cm.replaceRange('\n'+snippet+'\n',CodeMirror.Pos(cur.line,cm.getLine(cur.line).length));cm.focus();
+}
+function insertPageBreak(){const cur=cm.getCursor();cm.replaceRange('\n\n\\newpage\n\n',CodeMirror.Pos(cur.line,cm.getLine(cur.line).length));cm.focus();toast('Page break inserted');}
+function insertLink(){const sel=cm.getSelection();document.getElementById('mLinkText').value=sel||'';document.getElementById('mLinkUrl').value='';openM('mLink');setTimeout(()=>document.getElementById(sel?'mLinkUrl':'mLinkText').focus(),80);}
+function doInsertLink(){const text=document.getElementById('mLinkText').value||'link';const url=document.getElementById('mLinkUrl').value||'#';cm.replaceSelection(`[${text}](${url})`);closeM('mLink');cm.focus();}
+function insertImage(){document.getElementById('mImgAlt').value='';document.getElementById('mImgPath').value='img/';openM('mImage');setTimeout(()=>document.getElementById('mImgAlt').focus(),80);}
+function doInsertImage(){const alt=document.getElementById('mImgAlt').value||'image';const path=document.getElementById('mImgPath').value||'img/image.png';cm.replaceSelection(`![${alt}](${path})`);closeM('mImage');cm.focus();}
+
+function initTablePicker(){
+  const grid=document.getElementById('tblGrid');const lbl=document.getElementById('tblSizeLabel');grid.innerHTML='';
+  for(let r=1;r<=6;r++){for(let c=1;c<=6;c++){
+    const cell=document.createElement('div');cell.className='tbl-cell';cell.dataset.r=r;cell.dataset.c=c;
+    cell.onmouseenter=()=>{const cr=parseInt(cell.dataset.r),cc=parseInt(cell.dataset.c);lbl.textContent=`${cr} × ${cc}`;grid.querySelectorAll('.tbl-cell').forEach(el=>{el.classList.toggle('hov',parseInt(el.dataset.r)<=cr&&parseInt(el.dataset.c)<=cc);});};
+    cell.onclick=()=>{insertTable(parseInt(cell.dataset.r),parseInt(cell.dataset.c));closeTablePicker();};
+    grid.appendChild(cell);
+  }}
+  grid.onmouseleave=()=>{lbl.textContent='Select table size';grid.querySelectorAll('.tbl-cell').forEach(el=>el.classList.remove('hov'));};
+}
+function insertTable(rows,cols){
+  const header='| '+Array.from({length:cols},(_,i)=>`Col ${i+1}`).join(' | ')+' |';
+  const sep='| '+Array.from({length:cols},()=>'---').join(' | ')+' |';
+  const row='| '+Array.from({length:cols},()=>'     ').join(' | ')+' |';
+  const body=Array.from({length:rows-1},()=>row).join('\n');
+  const table=`\n${header}\n${sep}\n${body}\n`;
+  const cur=cm.getCursor();cm.replaceRange(table,CodeMirror.Pos(cur.line,cm.getLine(cur.line).length));cm.focus();toast(`${rows}×${cols} table inserted`);
+}
+function toggleTablePicker(e){e.stopPropagation();const p=document.getElementById('tablePopup');if(p.classList.contains('open')){closeTablePicker();return;}closeAllPopups();const rect=document.getElementById('tableBtn').getBoundingClientRect();p.style.top=(rect.bottom+4)+'px';p.style.left=rect.left+'px';p.classList.add('open');}
+function closeTablePicker(){document.getElementById('tablePopup').classList.remove('open');}
+
+const COLOR_MAP=[
+  {hex:'#ff4f4f',latex:'red'},{hex:'#ff9f5e',latex:'orange'},{hex:'#f5d030',latex:'yellow'},
+  {hex:'#a8ff3e',latex:'lime'},{hex:'#3de87a',latex:'green'},{hex:'#3dd9d0',latex:'cyan'},
+  {hex:'#5b52f5',latex:'blue'},{hex:'#b96aff',latex:'purple'},{hex:'#ff5fa0',latex:'pink'},
+  {hex:'#ffffff',latex:'white'},{hex:'#8a90ab',latex:'gray'},{hex:'#1a1e2a',latex:'black'},
+  {hex:'#ffb347',latex:'brown'},{hex:'#7ee8ff',latex:'lightblue'},{hex:'#c4b5ff',latex:'violet'},
+  {hex:'#ff9fd8',latex:'magenta'},{hex:'#6de890',latex:'lightgreen'},{hex:'#f59038',latex:'darkorange'},
+];
+function initColorPicker(){
+  const sw=document.getElementById('colorSwatches');
+  COLOR_MAP.forEach(({hex,latex})=>{
+    const el=document.createElement('div');el.className='color-swatch';el.style.background=hex;el.title=`\\textcolor{${latex}}{...}`;
+    el.onclick=()=>applyColor(hex,latex);sw.appendChild(el);
+  });
+}
+function applyColor(hex,latex){
+  currentColor=hex;document.getElementById('colorUnderline').style.background=hex||'#1a6fba';
+  const sel=cm.getSelection();
+  if(sel){
+    if(hex&&latex){cm.replaceSelection(`\\textcolor{${latex}}{${sel}}`);toast(`\\textcolor{${latex}}{...} applied`);}
+    else{cm.replaceSelection(sel.replace(/\\textcolor\{[^}]*\}\{([^}]*)\}/g,'$1'));toast('Color removed');}
+  }else if(hex&&latex){
+    const cur=cm.getCursor();const snippet=`\\textcolor{${latex}}{text}`;cm.replaceRange(snippet,cur);
+    const start=CodeMirror.Pos(cur.line,cur.ch+snippet.length-4);const end=CodeMirror.Pos(cur.line,cur.ch+snippet.length-1);
+    cm.setSelection(start,end);toast(`Inserted \\textcolor{${latex}}{text}`);
+  }
+  closeColorPicker();cm.focus();
+  document.querySelectorAll('.color-swatch').forEach(el=>el.classList.toggle('active',el.style.background===hex));
+}
+function toggleColorPicker(e){e.stopPropagation();const p=document.getElementById('colorPopup');if(p.classList.contains('open')){closeColorPicker();return;}closeAllPopups();const rect=document.getElementById('colorBtn').getBoundingClientRect();p.style.top=(rect.bottom+4)+'px';p.style.left=rect.left+'px';p.classList.add('open');}
+function closeColorPicker(){document.getElementById('colorPopup').classList.remove('open');}
+
+function toggleLangPicker(e){e.stopPropagation();const popup=document.getElementById('langPopup');if(popup.classList.contains('open')){closeLangPicker();return;}closeAllPopups();const rect=document.getElementById('codeBlockBtn').getBoundingClientRect();popup.style.top=(rect.bottom+4)+'px';popup.style.left=rect.left+'px';popup.classList.add('open');}
+function closeLangPicker(){document.getElementById('langPopup').classList.remove('open');}
+
+function toggleInsertMenu(e){e.stopPropagation();const popup=document.getElementById('insertPopup');if(popup.classList.contains('open')){closeInsertMenu();return;}closeAllPopups();const rect=document.getElementById('insertBtn').getBoundingClientRect();popup.style.top=(rect.bottom+4)+'px';popup.style.left=rect.left+'px';popup.classList.add('open');}
+function closeInsertMenu(){document.getElementById('insertPopup').classList.remove('open');}
+function closeAllPopups(){closeLangPicker();closeInsertMenu();closeTablePicker();closeColorPicker();}
+
+function insertSnippet(type){
+  const snips={
+    toc:'\n\\tableofcontents\n\n',pagebreak:'\n\n\\newpage\n\n',footnote:'[^1]\n\n[^1]: Footnote text here.',
+    warning:'\n> **⚠️ Warning:** Your warning message here.\n\n',info:'\n> **ℹ️ Note:** Your note here.\n\n',
+    finding:'\n## 🔴 Finding: [Title]\n\n**Severity:** Critical / High / Medium / Low\n\n**Description:**\nDescribe the finding here.\n\n**Impact:**\nExplain the impact.\n\n**Remediation:**\nSuggested fix.\n\n',
+    nmap:'\n```\n# Nmap scan\nnmap -sV -sC -p- --min-rate 5000 10.10.10.X\n\nPORT      STATE  SERVICE  VERSION\n22/tcp    open   ssh      OpenSSH 8.x\n80/tcp    open   http     Apache httpd 2.4.x\n```\n\n',
+    credentials:'\n| Username | Password | Service | Notes |\n|----------|----------|---------|-------|\n| admin    | password | HTTP    |       |\n| root     | toor     | SSH     |       |\n\n',
+  };
+  const text=snips[type]||'';const cur=cm.getCursor();cm.replaceRange(text,CodeMirror.Pos(cur.line,cm.getLine(cur.line).length));cm.focus();
+}
+
+function toggleKeymap(e){if(e)e.stopPropagation();document.getElementById('keymapPanel').classList.toggle('open');}
+function closeKeymap(){document.getElementById('keymapPanel').classList.remove('open');}
+
+function openNewFile(par){newFilePar=par;document.getElementById('mFName').value='';openM('mNewFile');setTimeout(()=>document.getElementById('mFName').focus(),80);}
+function openNewFolder(par){newFilePar=par;document.getElementById('mFolderName').value='';openM('mNewFolder');setTimeout(()=>document.getElementById('mFolderName').focus(),80);}
+async function doNewFile(){
+  const name=document.getElementById('mFName').value.trim();if(!name)return;
+  const fp=newFilePar?`${newFilePar}/${name}`:name;
+  await apiFetch(`/api/files/${PID}/create`,{method:'POST',body:{path:fp,type:'file'}});
+  closeM('mNewFile');await loadTree();if(/\.(md|txt|tex)$/i.test(name))openFile(fp);
+  socket.emit('refresh-tree',{projectId:PID});toast(`Created ${name}`);
+}
+async function doNewFolder(){
+  const name=document.getElementById('mFolderName').value.trim();if(!name)return;
+  const fp=newFilePar?`${newFilePar}/${name}`:name;
+  await apiFetch(`/api/files/${PID}/create`,{method:'POST',body:{path:fp,type:'folder'}});
+  expanded[fp]=true;closeM('mNewFolder');await loadTree();
+  socket.emit('refresh-tree',{projectId:PID});toast(`Created ${name}/`);
+}
+async function doRename(){
+  const nv=document.getElementById('mRenameVal').value.trim();if(!nv||!renamePath)return;
+  const parts=renamePath.split('/');parts[parts.length-1]=nv;const np=parts.join('/');
+  await apiFetch(`/api/files/${PID}/rename`,{method:'POST',body:{oldPath:renamePath,newPath:np}});
+  if(activeFile===renamePath){const t=tabs.find(x=>x.path===renamePath);if(t){t.path=np;t.name=nv;}activeFile=np;}
+  closeM('mRename');await loadTree();renderTabs();socket.emit('refresh-tree',{projectId:PID});
+}
+async function deleteFile(path){
+  if(!confirm(`Delete "${path.split('/').pop()}"?`))return;
+  await fetch(`/api/files/${PID}/delete?path=${encodeURIComponent(path)}`,{method:'DELETE'});
+  closeTab(path);await loadTree();socket.emit('refresh-tree',{projectId:PID});toast('Deleted');
+}
+
+function showCtx(x,y,n){
+  const m=document.getElementById('ctxMenu');const isDir=n.type==='folder';
+  m.innerHTML=`${isDir?`
+    <div class="ci" onclick="openNewFile('${esc(n.path)}');hideCtx()">New File</div>
+    <div class="ci" onclick="openNewFolder('${esc(n.path)}');hideCtx()">New Folder</div>
+    <div class="ci" onclick="triggerUpload('${esc(n.path)}');hideCtx()">Upload Here</div>
+    <div class="csep"></div>`:''}
+    <div class="ci" onclick="startRename('${esc(n.path)}','${esc(n.name)}');hideCtx()">Rename</div>
+    <div class="csep"></div>
+    <div class="ci danger" onclick="deleteFile('${esc(n.path)}');hideCtx()">Delete</div>`;
+  m.style.display='block';
+  m.style.left=Math.min(x,window.innerWidth-180)+'px';
+  m.style.top=Math.min(y,window.innerHeight-220)+'px';
+}
+function hideCtx(){document.getElementById('ctxMenu').style.display='none';}
+document.addEventListener('click',()=>{hideCtx();closeAllPopups();closeKeymap();});
+function startRename(path,name){
+  renamePath=path;document.getElementById('mRenameVal').value=name;openM('mRename');
+  setTimeout(()=>{const i=document.getElementById('mRenameVal');i.focus();const d=name.lastIndexOf('.');if(d>0)i.setSelectionRange(0,d);else i.select();},80);
+}
+
+function triggerUpload(dest){uploadDest=dest||'';document.getElementById('upInputFiles').click();}
+async function handleUpload(event){
+  const files=event.target.files;if(!files.length)return;
+  const fd=new FormData();
+  Array.from(files).forEach(f=>{fd.append('files',f);fd.append('relativePaths',f.webkitRelativePath||f.name);});
+  fd.append('dest',uploadDest);
+  try{
+    const r=await fetch(`/api/files/${PID}/upload`,{method:'POST',body:fd});const res=await r.json();
+    if(res.error){toast('Upload error: '+res.error,'err');return;}
+    toast(`${files.length} file(s) uploaded`);await loadTree();socket.emit('refresh-tree',{projectId:PID});
+  }catch{toast('Upload failed','err');}
+  event.target.value='';uploadDest='';
+}
+function rootDragOver(e){e.preventDefault();e.currentTarget.style.background='rgba(26,111,186,.04)';}
+function rootDragLeave(e){e.currentTarget.style.background='';}
+async function rootDrop(e){
+  e.preventDefault();e.currentTarget.style.background='';
+  const src=e.dataTransfer.getData('text/plain');
+  if(src){await moveFile(src,'');return;}await dropFiles(e,'');
+}
+async function dropFiles(e,dest){
+  const files=e.dataTransfer.files;if(!files.length)return;
+  const fd=new FormData();
+  Array.from(files).forEach(f=>{fd.append('files',f);fd.append('relativePaths',f.webkitRelativePath||f.name);});
+  fd.append('dest',dest||'');
+  try{await fetch(`/api/files/${PID}/upload`,{method:'POST',body:fd});toast(`${files.length} file(s) uploaded`);await loadTree();socket.emit('refresh-tree',{projectId:PID});}catch{toast('Upload failed','err');}
+}
+document.addEventListener('paste',async(e)=>{
+  const items=e.clipboardData?.items;if(!items)return;
+  for(const item of items){
+    if(item.type.startsWith('image/')){
+      const file=item.getAsFile();const reader=new FileReader();
+      reader.onload=async(ev)=>{
+        const fname=`paste_${Date.now()}.png`;
+        const r=await apiFetch(`/api/files/${PID}/clipboard-image`,{method:'POST',body:{data:ev.target.result,filename:fname}});
+        cm.replaceSelection(`![screenshot](${r.path})\n`);toast('Image pasted');await loadTree();
+      };
+      reader.readAsDataURL(file);break;
+    }
+  }
+});
+
+function toggleChat(){
+  chatCollapsed=!chatCollapsed;
+  document.getElementById('chatPanel').classList.toggle('collapsed',chatCollapsed);
+  if(!chatCollapsed){document.getElementById('chatBadge').classList.remove('show');const m=document.getElementById('chatMsgs');m.scrollTop=m.scrollHeight;}
+}
+function chatKD(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();}}
+function sendChat(){const i=document.getElementById('chatIn');const msg=i.value.trim();if(!msg)return;socket.emit('chat-message',{projectId:PID,message:msg});i.value='';}
+function appendChat(msg){
+  const c=document.getElementById('chatMsgs');const el=document.createElement('div');el.className='chat-msg';
+  const t=new Date(msg.timestamp).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+  el.innerHTML=`<div class="chat-msg-hdr"><span class="chat-nick" style="color:${msg.color}">${H(msg.nickname)}</span><span class="chat-time">${t}</span></div><div class="chat-txt">${H(msg.message)}</div>`;
+  c.appendChild(el);if(!chatCollapsed)c.scrollTop=c.scrollHeight;
+}
+function sysMsg(txt){const c=document.getElementById('chatMsgs');const el=document.createElement('div');el.className='sys-msg';el.textContent=txt;c.appendChild(el);if(!chatCollapsed)c.scrollTop=c.scrollHeight;}
+
+function exportZip(){window.open(`/api/files/${PID}/export/zip`);}
+function exportPdf(){window.open(`/api/files/${PID}/export/pdf`);}
+
+function mkRes(id,gL,gR){
+  const r=document.getElementById(id);let sx,sl,sr;
+  r.onmousedown=e=>{e.preventDefault();sx=e.clientX;sl=gL().offsetWidth;sr=gR().offsetWidth;r.classList.add('active');document.body.style.cssText='cursor:col-resize;user-select:none';};
+  document.addEventListener('mousemove',e=>{if(!r.classList.contains('active'))return;const dx=e.clientX-sx;const nl=Math.max(80,sl+dx),nr=Math.max(80,sr-dx);const L=gL(),R=gR();L.style.width=nl+'px';L.style.flexShrink='0';R.style.width=nr+'px';R.style.flexShrink='0';cm.refresh();});
+  document.addEventListener('mouseup',()=>{if(r.classList.contains('active')){r.classList.remove('active');document.body.style.cssText='';cm.refresh();}});
+}
+mkRes('res1',()=>document.getElementById('treeEl'),()=>document.getElementById('edPanel'));
+mkRes('res2',()=>document.getElementById('edPanel'),()=>document.getElementById('pdfPanel'));
+mkRes('res3',()=>document.getElementById('pdfPanel'),()=>document.getElementById('chatPanel'));
+
+function openM(id){document.getElementById(id).classList.add('open');}
+function closeM(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.modal-ov').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('open');}));
+
+function toast(msg,type='ok'){
+  const c=document.getElementById('toasts');const el=document.createElement('div');
+  el.className=`toast ${type}`;el.innerHTML=`<div class="tdot"></div><span>${H(msg)}</span>`;
+  c.appendChild(el);setTimeout(()=>el.remove(),3000);
+}
+
+function H(s){if(!s)return'';return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function esc(s){return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'")}
+async function apiFetch(url,{method='GET',body=null}={}){
+  const opts={method,headers:{}};
+  if(body){opts.headers['Content-Type']='application/json';opts.body=JSON.stringify(body);}
+  const r=await fetch(url,opts);return await r.json();
+}
+
+init();
+</script>
+</body>
+</html>

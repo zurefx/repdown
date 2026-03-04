@@ -1,0 +1,28 @@
+# ============================================================
+# config/pandoc.yaml
+# Opciones de compilación centralizadas para Pandoc
+# ============================================================
+
+# Motor de renderizado
+pdf-engine: xelatex
+
+# Formato de entrada
+from: markdown+yaml_metadata_block+raw_html+fenced_code_attributes
+
+# Numeración y TOC
+number-sections: true
+toc: true
+toc-depth: 6
+
+# Resaltado de código (Pandoc Shaded)
+highlight-style: kate
+
+# Rutas de recursos
+resource-path:
+  - .
+  - assets/
+  - img/
+
+# Opciones XeLaTeX
+pdf-engine-opt:
+  - -interaction=nonstopmode
