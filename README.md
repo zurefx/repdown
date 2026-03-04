@@ -99,7 +99,7 @@ repdown/
 ### 1 — Clone the repository
 
 ```bash
-git clone https://github.com/yourusername/repdown.git
+git clone https://github.com/zurefx/repdown.git
 cd repdown
 ```
 
